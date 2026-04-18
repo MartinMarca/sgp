@@ -1,0 +1,68 @@
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+  }
+  
+  .container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+  }
+  
+  /* HEADER */
+  header {
+    background: #1f2933;
+    color: #fff;
+  }
+  
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .logo {
+    font-size: 20px;
+    font-weight: bold;
+  }
+  
+  /* HERO */
+  .hero {
+    background: #111827;
+    padding: 40px 0;
+  }
+  
+  .quick-access {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+  }
+  
+  .access-card {
+    background: #1f2933;
+    color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    text-decoration: none;
+    transition: 0.2s;
+  }
+  
+  .access-card:hover {
+    background: #374151;
+  }
+  
+  /* MAIN */
+  main {
+    padding: 40px 0;
+  }
+  
+  /* FOOTER */
+  footer {
+    background: #1f2933;
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+  }
+  

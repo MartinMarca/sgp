@@ -1,0 +1,285 @@
+@startuml Diagrama_ER_Granja_Porcina
+
+skinparam linetype ortho
+skinparam roundcorner 10
+skinparam shadowing false
+skinparam defaultFontSize 11
+skinparam defaultFontName Arial
+skinparam entity {
+  BackgroundColor #F0F0F0
+  BorderColor #333333
+}
+skinparam arrow {
+  Color #333333
+  Thickness 2
+}
+
+' ============================================
+' ENTIDADES
+' ============================================
+
+entity "usuarios" as usuarios {
+  * **id** : INT <<PK>>
+  --
+  * username : VARCHAR(50) <<UNIQUE>>
+  * email : VARCHAR(100) <<UNIQUE>>
+  * password_hash : VARCHAR(255)
+  nombre_completo : VARCHAR(100)
+  * rol : ENUM('admin', 'usuario', 'veterinario')
+  activo : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "granjas" as granjas {
+  * **id** : INT <<PK>>
+  --
+  * nombre : VARCHAR(100)
+  descripcion : TEXT
+  ubicacion : VARCHAR(200)
+  activo : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "corrales" as corrales {
+  * **id** : INT <<PK>>
+  --
+  * granja_id : INT <<FK>>
+  * nombre : VARCHAR(100)
+  descripcion : TEXT
+  capacidad_maxima : INT
+  activo : BOOLEAN
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "lotes" as lotes {
+  * **id** : INT <<PK>>
+  --
+  corral_id : INT <<FK>>
+  * nombre : VARCHAR(100)
+  * cantidad_lechones : INT
+  fecha_creacion : DATE
+  estado : ENUM('activo', 'cerrado', 'vendido')
+  fecha_cierre : DATE
+  motivo_cierre : TEXT
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "padrillos" as padrillos {
+  * **id** : INT <<PK>>
+  --
+  * granja_id : INT <<FK>>
+  * numero_caravana : VARCHAR(50) <<UNIQUE>>
+  * nombre : VARCHAR(100)
+  genetica : VARCHAR(100)
+  fecha_ultima_vacunacion : DATE
+  activo : BOOLEAN
+  fecha_baja : DATE
+  motivo_baja : ENUM('muerte', 'venta')
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "cerdas" as cerdas {
+  * **id** : INT <<PK>>
+  --
+  * granja_id : INT <<FK>>
+  * numero_caravana : VARCHAR(50) <<UNIQUE>>
+  detalle_pelaje : TEXT
+  genetica : VARCHAR(100)
+  * estado : ENUM('disponible', 'servicio', 'gestacion', 'cria')
+  activo : BOOLEAN
+  fecha_baja : DATE
+  motivo_baja : ENUM('muerte', 'venta')
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "servicios" as servicios {
+  * **id** : INT <<PK>>
+  --
+  * cerda_id : INT <<FK>>
+  * fecha_servicio : DATE
+  tiene_repeticiones : BOOLEAN
+  cantidad_repeticiones : INT
+  * tipo_monta : ENUM('natural', 'inseminacion')
+  --
+  ' Campos Monta Natural
+  padrillo_id : INT <<FK>>
+  cantidad_saltos : INT
+  --
+  ' Campos Inseminación
+  numero_pajuela : VARCHAR(50)
+  --
+  ' Control de Preñez
+  prenez_confirmada : BOOLEAN
+  fecha_confirmacion_prenez : DATE
+  prenez_cancelada : BOOLEAN
+  fecha_cancelacion_prenez : DATE
+  motivo_cancelacion : TEXT
+  --
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "destetes" as destetes {
+  * **id** : INT <<PK>>
+  --
+  * cerda_id : INT <<FK>>
+  parto_id : INT <<FK>>
+  * fecha_destete : DATE
+  * cantidad_lechones_destetados : INT
+  * fecha_estimada : DATE
+  * lote_id : INT <<FK>>
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "partos" as partos {
+  * **id** : INT <<PK>>
+  --
+  * cerda_id : INT <<FK>>
+  servicio_id : INT <<FK>>
+  * fecha_parto : DATE
+  * lechones_nacidos_vivos : INT
+  * lechones_nacidos_totales : INT
+  * lechones_hembras : INT
+  * lechones_machos : INT
+  * fecha_estimada : DATE
+  created_at : TIMESTAMP
+  updated_at : TIMESTAMP
+}
+
+entity "estadisticas_cache" as estadisticas_cache {
+  * **id** : INT <<PK>>
+  --
+  * tipo : ENUM('cerdas', 'servicios', 'partos', 'destetes')
+  * periodo : VARCHAR(20)
+  * datos : JSON
+  fecha_calculo : TIMESTAMP
+}
+
+' ============================================
+' POSICIONAMIENTO
+' ============================================
+
+' Posicionar jerarquía: Granjas -> Corrales -> Lotes
+granjas -[hidden]down- corrales
+corrales -[hidden]down- lotes
+lotes -[hidden]right- destetes
+
+' Posicionar destetes debajo de cerdas y a la derecha de servicios
+cerdas -[hidden]down- destetes
+servicios -[hidden]left- destetes
+
+' ============================================
+' RELACIONES
+' ============================================
+
+' Relación: Usuarios -> Granjas (N:M a través de tabla intermedia)
+usuarios }o--o{ granjas : "gestiona\n(muchos usuarios pueden gestionar muchas granjas)"
+
+' Relación: Granjas -> Corrales (1:N)
+granjas ||--o{ corrales : "contiene\n(1 granja tiene muchos corrales)"
+
+' Relación: Corrales -> Lotes (1:N opcional)
+corrales ||--o{ lotes : "contiene\n(1 corral tiene 0 o más lotes)"
+
+' Relación: Destetes -> Lotes (N:1)
+destetes }o--|| lotes : "pertenece\n(muchos destetes pueden estar en 1 lote)\n[obligatorio: lechones deben estar en lote]"
+
+' Relación: Granjas -> Cerdas (1:N)
+granjas ||--o{ cerdas : "tiene\n(1 granja tiene muchas cerdas)"
+
+' Relación: Granjas -> Padrillos (1:N)
+granjas ||--o{ padrillos : "tiene\n(1 granja tiene muchos padrillos)"
+
+' Relación: Cerdas -> Servicios (1:N)
+cerdas ||--o{ servicios : "tiene\n(1 cerda tiene muchos servicios)"
+
+' Relación: Padrillos -> Servicios (1:N opcional)
+padrillos ||--o{ servicios : "participa\n(1 padrillo en muchos servicios)\n[opcional: solo monta natural]"
+
+' Relación: Cerdas -> Partos (1:N)
+cerdas ||--o{ partos : "tiene\n(1 cerda tiene muchos partos)"
+
+' Relación: Servicios -> Partos (1:1 opcional)
+servicios ||--o| partos : "origina\n(1 servicio origina 1 parto)\n[opcional: si preñez confirmada]"
+
+' Relación: Cerdas -> Destetes (1:N)
+cerdas ||--o{ destetes : "tiene\n(1 cerda tiene muchos destetes)"
+
+' Relación: Partos -> Destetes (1:1 opcional)
+partos ||--o| destetes : "origina\n(1 parto origina 1 destete)\n[opcional]"
+
+' ============================================
+' NOTAS ADICIONALES
+' ============================================
+
+note top of cerdas
+  **Ciclo de Maternidad:**
+  Disponible → Servicio → Gestación → Cría → Disponible
+  
+  El estado cambia según:
+  - Servicio: al registrar servicio
+  - Gestación: al confirmar preñez
+  - Cría: al registrar parto
+  - Disponible: al registrar destete
+end note
+
+note bottom of servicios
+  **Tipos de Monta:**
+  - Natural: requiere padrillo_id y cantidad_saltos
+  - Inseminación: requiere numero_pajuela
+  
+  **Control de Preñez:**
+  - prenez_confirmada: cambia estado cerda a 'gestacion'
+  - prenez_cancelada: vuelve cerda a 'disponible'
+end note
+
+note bottom of partos
+  **Cálculo de Fechas:**
+  - fecha_estimada = fecha_servicio + 114 días
+  - fecha_parto: fecha real cuando ocurre
+end note
+
+note bottom of destetes
+  **Cálculo de Fechas:**
+  - fecha_estimada = fecha_parto + 30 días
+  - fecha_destete: fecha real cuando ocurre
+  
+  **Asignación a Lote:**
+  - Los lechones destetados DEBEN pertenecer a un lote (obligatorio)
+  - El lote puede existir previamente o crearse en el momento
+  - Un lote puede contener lechones de múltiples destetes
+end note
+
+note top of granjas
+  **Jerarquía del Sistema:**
+  Granja → Corrales → Lotes
+  
+  Cada granja puede tener múltiples corrales.
+  Cada corral puede contener 0, 1 o más lotes.
+end note
+
+note bottom of lotes
+  **Origen del Lote:**
+  - Se puede crear antes o en el momento del destete
+  - Puede contener lechones de múltiples destetes
+  - Debe asignarse a un corral (obligatorio)
+  - NO se puede mover entre corrales una vez asignado
+  
+  **Estados:**
+  - activo: lote en producción
+  - cerrado: lote finalizado
+  - vendido: lote vendido
+  
+  **Cantidad:**
+  - Se puede editar la cantidad de lechones
+  - Suma de lechones de todos los destetes asociados
+end note
+
+@enduml

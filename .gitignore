@@ -1,0 +1,45 @@
+# ========================
+# Go (backend)
+# ========================
+backend/bin/
+backend/*.exe
+backend/*.test
+backend/coverage.out
+backend/tmp/
+
+# Variables de entorno (contienen credenciales)
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+
+# ========================
+# Node / Frontend
+# ========================
+node_modules/
+npm-debug.log*
+
+# ========================
+# macOS
+# ========================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# ========================
+# Editores / IDEs
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ========================
+# Archivos varios
+# ========================
+Untitled
+*.log
