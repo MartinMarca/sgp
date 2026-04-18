@@ -1,89 +1,83 @@
-# Sistema de Gestión de Granja Porcina
+# Sistema de Gestión de Granja Porcina (SGP)
 
-Sistema web para la gestión integral del ciclo de maternidad en granjas de cría porcina.
+Aplicación web para gestionar granjas porcinas, enfocada en el ciclo reproductivo y el seguimiento operativo (servicios, preñez, partos, destetes, lotes, ventas y estadísticas).
 
-## Características Principales
+## Stack actual
 
-- ✅ Gestión de cerdas y padrillos
-- ✅ Registro de servicios (monta natural e inseminación)
-- ✅ Control de preñez (confirmación y cancelación)
-- ✅ Registro de partos y destetes
-- ✅ Calendario de partos y destetes futuros
-- ✅ Estadísticas y reportes
-- ✅ Exportación a Excel
-- ✅ Sistema de autenticación y roles
+- **Backend**: Go + Gin + GORM
+- **Frontend**: HTML/CSS/JavaScript (vanilla), servido por el backend
+- **Base de datos**: MySQL 8+
+- **Autenticación**: JWT
 
-## Arquitectura
+## Funcionalidades principales
 
-Ver [ARQUITECTURA.md](./ARQUITECTURA.md) para detalles completos.
+- Gestión de granjas, corrales, cerdas y padrillos
+- Registro de servicios, partos, destetes y muertes de lechones
+- Gestión de lotes y ventas
+- Calendario de eventos futuros
+- Estadísticas por granja y por período
+- API protegida con autenticación por token
 
-### Stack Tecnológico
-- **Backend**: Node.js + Express + MySQL
-- **Frontend**: HTML/CSS/JavaScript (Vanilla)
-- **Base de Datos**: MySQL 8.0+
-- **ORM**: Sequelize
+## Requisitos
 
-## Instalación
+- Go 1.21+
+- MySQL 8+
+- Make (opcional, recomendado)
 
-### Prerrequisitos
-- Node.js v18+
-- MySQL 8.0+
-- npm o yarn
+## Puesta en marcha rápida
 
-### Pasos
+1. **Configurar entorno backend**
+   ```bash
+   cd backend
+   cp .env.example .env
+   ```
+   Edita `backend/.env` con tu configuración de base de datos y JWT.
 
-1. **Instalar dependencias**
+2. **Crear la base de datos**
+   ```sql
+   CREATE DATABASE granja_porcina;
+   ```
+
+3. **Inicializar esquema**
+   ```bash
+   mysql -u <usuario> -p granja_porcina < ../database/schema.sql
+   ```
+
+4. **Instalar dependencias y ejecutar**
+   ```bash
+   cd backend
+   make install
+   make run
+   ```
+
+5. **Acceder a la app**
+   - Frontend: `http://localhost:8080/`
+   - Healthcheck API: `http://localhost:8080/api/health`
+
+## Comandos útiles (backend)
+
 ```bash
-npm install
+cd backend
+make run      # desarrollo
+make dev      # hot reload (requiere air)
+make test     # tests
+make build    # compilar binario
 ```
 
-2. **Configurar base de datos**
-   - Crear base de datos MySQL
-   - Ejecutar el script `database/schema.sql`
-   - Configurar variables de entorno (ver `.env.example`)
+## Estructura del proyecto
 
-3. **Configurar variables de entorno**
-```bash
-cp .env.example .env
-# Editar .env con tus credenciales
+```text
+backend/      # API, lógica de negocio, acceso a datos
+frontend/     # interfaz web (HTML, CSS, JS)
+database/     # scripts SQL y diagrama ER
+ARQUITECTURA.md
+DISEÑO.md
 ```
 
-4. **Ejecutar migraciones** (si usas Sequelize CLI)
-```bash
-npm run migrate
-```
+## Documentación adicional
 
-5. **Iniciar servidor**
-```bash
-npm start
-# o para desarrollo con auto-reload:
-npm run dev
-```
-
-## Estructura del Proyecto
-
-```
-├── backend/          # API y lógica del servidor
-├── database/         # Scripts SQL
-├── css/             # Estilos
-├── js/              # JavaScript frontend
-├── index.html       # Página principal
-└── package.json     # Dependencias
-```
-
-## Ciclo de Maternidad
-
-El sistema gestiona el siguiente ciclo:
-
-1. **Disponible** → Cerda lista para ser servida
-2. **Servicio** → Se registra un servicio
-3. **Gestación** → Se confirma la preñez
-4. **Cría** → Se registra el parto
-5. **Disponible** → Se registra el destete (vuelve al inicio)
-
-## API Endpoints
-
-(Se documentará cuando esté implementado)
+- Arquitectura general: `ARQUITECTURA.md`
+- Diseño funcional: `DISEÑO.md`
 
 ## Licencia
 
