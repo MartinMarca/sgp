@@ -11,6 +11,8 @@ El sistema permite gestionar el ciclo completo de maternidad en una granja de cr
 - **Control de Preñez**: Confirmación y cancelación de preñeces
 - **Registro de Partos**: Información completa del parto y lechones
 - **Registro de Destetes**: Finalización del ciclo de cría y creación de lotes
+- **Registro de Muertes de Lechones**: Carga de bajas por parto/granja/corral y ajuste de cantidades
+- **Registro de Ventas**: Venta parcial o total de lotes con impacto en stock
 - **Gestión de Granjas**: Administración de múltiples granjas
 - **Gestión de Corrales**: Organización de espacios físicos dentro de granjas
 - **Gestión de Lotes**: Administración de grupos de lechones destetados
@@ -47,10 +49,17 @@ El sistema está organizado en una jerarquía de tres niveles:
 
 **Relaciones:**
 - **Granja** → tiene múltiples **Corrales** (1:N)
+- **Granja** → tiene múltiples **Cerdas** y **Padrillos** (1:N)
+- **Granja** ↔ **Usuario** mediante **UsuarioGranja** (N:M)
 - **Corral** → contiene 0, 1 o más **Lotes** (1:N opcional)
+- **Corral** → tiene múltiples **Muertes de Lechones** (1:N)
 - **Destete** → genera automáticamente 1 **Lote** (1:1)
-- **Lote** → puede estar en un **Corral** (opcional al crear)
-- **Cerdas y Padrillos** → pertenecen a una **Granja** (N:1)
+- **Lote** → pertenece a un **Corral** (N:1)
+- **Lote** → agrupa múltiples **Destetes** (1:N)
+- **Servicio** → pertenece a una **Cerda** y puede asociar un **Padrillo** (N:1)
+- **Parto** → pertenece a un **Servicio** y a una **Cerda** (N:1)
+- **Muertes de Lechones** → pueden asociarse a **Parto**, **Granja** y/o **Corral**
+- **Ventas** → pueden asociarse a un **Lote** (venta parcial o total)
 
 ---
 
@@ -98,7 +107,7 @@ El sistema gestiona el ciclo de maternidad a través de 4 estados:
 
 ### 2.3 Duración Estimada
 
-- **Gestación**: 114 días (desde confirmación de preñez hasta parto)
+- **Gestación**: 114 días (desde la fecha de servicio hasta parto)
 - **Cría**: 30 días (desde parto hasta destete)
 - **Ciclo completo**: ~144 días (desde servicio hasta nuevo servicio)
 
@@ -650,7 +659,7 @@ El sistema gestiona el ciclo de maternidad a través de 4 estados:
 ### Fase 1: Infraestructura Base (Prioridad Alta)
 - [x] Diagrama ER
 - [x] Schema SQL
-- [ ] Modelos Sequelize
+- [ ] Modelos GORM
 - [ ] Middleware de autenticación
 - [ ] Middleware de roles
 - [ ] Configuración de base de datos
@@ -661,7 +670,7 @@ El sistema gestiona el ciclo de maternidad a través de 4 estados:
 - [ ] Controladores y rutas de Servicios
 - [ ] Controladores y rutas de Partos
 - [ ] Controladores y rutas de Destetes
-- [ ] Validaciones con express-validator
+- [ ] Validaciones de request en handlers/services
 
 ### Fase 3: Backend - Lógica de Negocio (Prioridad Alta)
 - [ ] Transiciones de estado automáticas
@@ -717,17 +726,5 @@ El sistema gestiona el ciclo de maternidad a través de 4 estados:
 - Caché de estadísticas para consultas pesadas
 - Paginación en listados grandes
 
----
-
-## 9. Próximos Pasos
-
-1. **Revisar y aprobar este documento de diseño**
-2. **Implementar modelos Sequelize** (Fase 1)
-3. **Implementar backend básico** (Fase 2)
-4. **Implementar lógica de negocio** (Fase 3)
-5. **Desarrollar frontend** (Fases 4-5)
-
----
-
 *Documento creado: 2025-01-XX*
-*Última actualización: 2025-01-XX*
+*Última actualización: 2026-04-18*

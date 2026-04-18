@@ -65,7 +65,7 @@ proyecto/
 │   │   ├── middleware/          # Middlewares
 │   │   │   ├── auth.go          # Verificación JWT
 │   │   │   ├── cors.go          # CORS
-│   │   │   └── roles.go         # Control de roles
+│   │   │   └── ...
 │   │   ├── routes/              # Definición de rutas
 │   │   │   └── routes.go
 │   │   ├── database/            # Conexión y migraciones
@@ -81,18 +81,18 @@ proyecto/
 │   ├── go.sum                   # Checksums de dependencias
 │   └── Makefile                 # Comandos útiles (build, run, test)
 │
-├── frontend/                     # (archivos en raíz del proyecto)
+├── frontend/
 │   ├── index.html
-│   ├── cerdas.html
+│   ├── app.html
 │   ├── css/
 │   ├── js/
-│   │   ├── app.js
 │   │   ├── api.js               # Cliente API
 │   │   ├── auth.js              # Manejo de autenticación
 │   │   └── modules/             # Módulos por funcionalidad
+│   │       ├── granjas.js
 │   │       ├── cerdas.js
-│   │       ├── servicios.js
 │   │       └── ...
+│   ├── img/
 │   └── assets/
 │
 ├── database/
@@ -164,15 +164,6 @@ Beneficios:
 - **CORS**: Configuración restrictiva
 - **Rate Limiting**: Middleware para prevenir abuso (opcional)
 
-## Escalabilidad
-
-- **Concurrencia**: Goroutines para operaciones concurrentes
-- **100+ usuarios simultáneos**: Go maneja muy bien concurrencia nativa
-- **Conexión a BD**: Pool de conexiones MySQL (configurable en GORM)
-- **Performance**: Compilado a binario nativo, muy rápido
-- **Caché**: Considerar Redis para estadísticas frecuentes (opcional)
-- **Deployment**: Binario único, fácil de desplegar (Docker, systemd, etc.)
-
 ## Dependencias Go Principales
 
 ```go
@@ -190,21 +181,21 @@ require (
 ## Comandos Útiles
 
 ```bash
-# Inicializar módulo Go
-go mod init github.com/usuario/sgp
+# Ir al backend
+cd backend
 
 # Descargar dependencias
-go mod tidy
+make install
 
 # Ejecutar servidor (desarrollo)
-go run cmd/server/main.go
+make run
 
 # Compilar binario
-go build -o bin/server cmd/server/main.go
+make build
 
 # Ejecutar tests
-go test ./...
+make test
 
 # Ejecutar con hot-reload (air)
-air
+make dev
 ```

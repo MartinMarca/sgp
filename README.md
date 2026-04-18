@@ -74,6 +74,27 @@ ARQUITECTURA.md
 DISEÑO.md
 ```
 
+## API (resumen)
+
+- `GET /api/health` - estado del servidor
+- `POST /api/auth/register` - registro de usuario
+- `POST /api/auth/login` - inicio de sesión
+- Endpoints protegidos para:
+  - granjas, corrales, cerdas, padrillos
+  - servicios, partos, destetes
+  - muertes de lechones, lotes y ventas
+  - calendario y estadísticas
+
+## Módulos de dominio implementados
+
+- **Modelos**: usuario, granja, usuario_granja, corral, lote, padrillo, cerda, servicio, parto, destete.
+- **Capas backend**:
+  - `internal/models/` (entidades y validaciones)
+  - `internal/repositories/` (acceso a datos)
+  - `internal/services/` (lógica de negocio)
+  - `internal/handlers/` (controladores HTTP)
+  - `internal/routes/` (ruteo de API)
+
 ## Documentación adicional
 
 - Arquitectura general: `ARQUITECTURA.md`
