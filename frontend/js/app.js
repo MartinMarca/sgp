@@ -8,27 +8,71 @@ const App = (() => {
 
   // --- Inicializacion ---
 
-  function init() {
-    // Verificar autenticacion
+  async function init() {
     if (!API.isAuthenticated()) {
       window.location.href = 'index.html';
       return;
     }
 
+    try {
+      await API.refreshSession();
+    } catch (err) {
+      API.logout();
+      return;
+    }
+
     setupUser();
+    applyNavPermissions();
+    setupGranjaActiva();
     setupNavigation();
     setupLogout();
     setupSidebar();
 
-    // Cargar pagina inicial
     navigateTo('dashboard');
+  }
+
+  function applyNavPermissions() {
+    document.querySelectorAll('.nav-link[data-page]').forEach(link => {
+      const page = link.dataset.page;
+      const perm = link.dataset.perm;
+      const allowed = (!perm || Permissions.can(perm)) && Permissions.canAccessPage(page);
+      link.classList.toggle('d-none', !allowed);
+    });
+  }
+
+  function setupGranjaActiva() {
+    const wrap = document.getElementById('granjaActivaWrap');
+    if (!wrap) return;
+
+    const granjas = API.getGranjas();
+    if (granjas.length === 0) {
+      wrap.innerHTML = '';
+      return;
+    }
+
+    if (granjas.length === 1) {
+      API.setGranjaActiva(granjas[0].id);
+      wrap.innerHTML = `<span class="text-muted small"><i class="bi bi-building me-1"></i>${escHtml(granjas[0].nombre)}</span>`;
+      return;
+    }
+
+    const activeId = API.getGranjaActivaId();
+    wrap.innerHTML = `
+      <select class="form-select form-select-sm" id="selectGranjaGlobal" style="max-width:220px;" title="Granja activa">
+        ${granjas.map(g => `<option value="${g.id}"${g.id === activeId ? ' selected' : ''}>${escHtml(g.nombre)}</option>`).join('')}
+      </select>`;
+
+    document.getElementById('selectGranjaGlobal').addEventListener('change', (e) => {
+      API.setGranjaActiva(e.target.value);
+    });
   }
 
   function setupUser() {
     const user = API.getUser();
     const nameEl = document.getElementById('sidebarUserName');
     if (user && nameEl) {
-      nameEl.textContent = user.nombre_completo || user.username;
+      const rol = Permissions.rolLabel(user.rol);
+      nameEl.innerHTML = `${escHtml(user.nombre_completo || user.username)}<br><small class="text-muted" style="font-weight:400;">${escHtml(rol)}</small>`;
     }
 
     const estEl = document.getElementById('sidebarEstablecimiento');
@@ -53,6 +97,11 @@ const App = (() => {
   }
 
   function navigateTo(page) {
+    if (!Permissions.canAccessPage(page)) {
+      App.showToast('No tenes permiso para acceder a esta seccion', 'warning');
+      return;
+    }
+
     currentPage = page;
 
     // Actualizar active en sidebar
@@ -75,6 +124,7 @@ const App = (() => {
       ventas: 'Ventas',
       calendario: 'Calendario',
       estadisticas: 'Estadisticas',
+      usuarios: 'Usuarios',
     };
 
     document.getElementById('pageTitle').textContent = titles[page] || page;
@@ -110,6 +160,7 @@ const App = (() => {
       ventas: () => Ventas.load(),
       calendario: () => Calendario.load(),
       estadisticas: () => Estadisticas.load(),
+      usuarios: () => Usuarios.load(),
     };
 
     const loader = moduleLoaders[page];
@@ -147,12 +198,14 @@ const App = (() => {
   async function loadDashboard() {
     const content = document.getElementById('contentArea');
 
-    let granjas = [];
-    try {
-      const data = await API.get('/granjas');
-      granjas = data.data || [];
-    } catch (e) {
-      granjas = [];
+    let granjas = API.getGranjas();
+    if (granjas.length === 0) {
+      try {
+        const data = await API.get('/granjas');
+        granjas = data.data || [];
+      } catch (e) {
+        granjas = [];
+      }
     }
 
     if (granjas.length === 0) {
@@ -187,10 +240,11 @@ const App = (() => {
 
     document.getElementById('btnVerCalendario').addEventListener('click', (e) => { e.preventDefault(); navigateTo('calendario'); });
 
-    loadDashboardData(granjas[0].id);
+    loadDashboardData(API.getGranjaActivaId() || granjas[0].id);
   }
 
   async function loadDashboardData(granjaId) {
+    if (!granjaId) return;
     const [statsRes, eventosRes] = await Promise.allSettled([
       API.get(`/estadisticas/granja/${granjaId}`),
       API.get(`/calendario?granja_id=${granjaId}&dias=7`),
@@ -436,6 +490,7 @@ const App = (() => {
     ventas: 'Ventas',
     calendario: 'Calendario',
     estadisticas: 'Estadisticas',
+    usuarios: 'Usuarios',
   };
 
   return {
@@ -449,4 +504,4 @@ const App = (() => {
 })();
 
 // Auto-init
-document.addEventListener('DOMContentLoaded', App.init);
+document.addEventListener('DOMContentLoaded', () => App.init());

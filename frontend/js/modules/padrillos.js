@@ -13,8 +13,11 @@ const Padrillos = (() => {
     const content = document.getElementById('contentArea');
 
     try {
-      const data = await API.get('/granjas');
-      granjas = data.data || [];
+      granjas = API.getGranjas();
+      if (granjas.length === 0) {
+        const data = await API.get('/granjas');
+        granjas = data.data || [];
+      }
     } catch (e) { granjas = []; }
 
     if (granjas.length === 0) {
@@ -27,7 +30,7 @@ const Padrillos = (() => {
       return;
     }
 
-    granjaSeleccionada = granjas[0].id;
+    granjaSeleccionada = API.getGranjaActivaId() || granjas[0].id;
 
     content.innerHTML = `
       <div class="d-flex align-items-center gap-3 mb-4">
@@ -136,6 +139,8 @@ const Padrillos = (() => {
       return;
     }
 
+    const canDelete = Permissions.can(Permissions.P.PADRILLO_DELETE);
+
     const rows = padrillos.map(p => `
       <tr>
         <td><span class="fw-semibold">${esc(p.numero_caravana)}</span></td>
@@ -150,7 +155,7 @@ const Padrillos = (() => {
         <td>
           <div class="d-flex gap-1">
             <button class="btn btn-sm btn-outline-secondary" title="Editar" onclick="Padrillos.edit(${p.id})"><i class="bi bi-pencil"></i></button>
-            ${p.activo ? `<button class="btn btn-sm btn-outline-danger" title="Dar de baja" onclick="Padrillos.confirmBaja(${p.id})"><i class="bi bi-x-circle"></i></button>` : ''}
+            ${canDelete && p.activo ? `<button class="btn btn-sm btn-outline-danger" title="Dar de baja" onclick="Padrillos.confirmBaja(${p.id})"><i class="bi bi-x-circle"></i></button>` : ''}
           </div>
         </td>
       </tr>

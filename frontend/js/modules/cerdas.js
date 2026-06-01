@@ -15,8 +15,11 @@ const Cerdas = (() => {
     const content = document.getElementById('contentArea');
 
     try {
-      const data = await API.get('/granjas');
-      granjas = data.data || [];
+      granjas = API.getGranjas();
+      if (granjas.length === 0) {
+        const data = await API.get('/granjas');
+        granjas = data.data || [];
+      }
     } catch (e) { granjas = []; }
 
     if (granjas.length === 0) {
@@ -29,7 +32,7 @@ const Cerdas = (() => {
       return;
     }
 
-    granjaSeleccionada = granjas[0].id;
+    granjaSeleccionada = API.getGranjaActivaId() || granjas[0].id;
 
     content.innerHTML = `
       <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
@@ -178,6 +181,8 @@ const Cerdas = (() => {
       return;
     }
 
+    const canDelete = Permissions.can(Permissions.P.CERDA_DELETE);
+
     const rows = filtradas.map(c => `
       <tr>
         <td><span class="fw-semibold">${esc(c.numero_caravana)}</span></td>
@@ -188,7 +193,7 @@ const Cerdas = (() => {
           <div class="d-flex gap-1">
             <button class="btn btn-sm btn-outline-primary" title="Historial" onclick="Cerdas.showHistorial(${c.id})"><i class="bi bi-clock-history"></i></button>
             <button class="btn btn-sm btn-outline-secondary" title="Editar" onclick="Cerdas.edit(${c.id})"><i class="bi bi-pencil"></i></button>
-            ${c.activo ? `<button class="btn btn-sm btn-outline-danger" title="Dar de baja" onclick="Cerdas.confirmBaja(${c.id})"><i class="bi bi-x-circle"></i></button>` : ''}
+            ${canDelete && c.activo ? `<button class="btn btn-sm btn-outline-danger" title="Dar de baja" onclick="Cerdas.confirmBaja(${c.id})"><i class="bi bi-x-circle"></i></button>` : ''}
           </div>
         </td>
       </tr>

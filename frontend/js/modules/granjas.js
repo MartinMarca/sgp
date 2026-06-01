@@ -16,9 +16,10 @@ const Granjas = (() => {
       <div class="table-container">
         <div class="table-header">
           <h5><i class="bi bi-building me-2"></i>Mis Granjas</h5>
+          ${Permissions.can(Permissions.P.GRANJA_WRITE) ? `
           <button class="btn btn-sgp" id="btnNuevaGranja">
             <i class="bi bi-plus-lg me-2"></i>Nueva Granja
-          </button>
+          </button>` : ''}
         </div>
         <div id="granjasTableBody">
           <div class="loading-spinner">
@@ -92,7 +93,8 @@ const Granjas = (() => {
   // --- Eventos ---
 
   function bindEvents() {
-    document.getElementById('btnNuevaGranja').addEventListener('click', () => openModal());
+    const btnNueva = document.getElementById('btnNuevaGranja');
+    if (btnNueva) btnNueva.addEventListener('click', () => openModal());
     document.getElementById('btnGuardarGranja').addEventListener('click', handleSave);
     document.getElementById('formGranja').addEventListener('submit', (e) => {
       e.preventDefault();
@@ -104,8 +106,11 @@ const Granjas = (() => {
 
   async function fetchGranjas() {
     try {
-      const data = await API.get('/granjas');
-      granjas = data.data || [];
+      granjas = API.getGranjas();
+      if (granjas.length === 0) {
+        const data = await API.get('/granjas');
+        granjas = data.data || [];
+      }
       renderTable();
     } catch (err) {
       document.getElementById('granjasTableBody').innerHTML = `
@@ -130,6 +135,9 @@ const Granjas = (() => {
       return;
     }
 
+    const canWrite = Permissions.can(Permissions.P.GRANJA_WRITE);
+    const canDelete = Permissions.can(Permissions.P.GRANJA_DELETE);
+
     const rows = granjas.map(g => `
       <tr>
         <td>
@@ -149,14 +157,10 @@ const Granjas = (() => {
           <small class="text-muted">${App.formatDate(g.created_at)}</small>
         </td>
         <td>
-          <div class="d-flex gap-1">
-            <button class="btn btn-sm btn-outline-secondary" title="Editar" onclick="Granjas.edit(${g.id})">
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-danger" title="Eliminar" onclick="Granjas.confirmDelete(${g.id})">
-              <i class="bi bi-trash"></i>
-            </button>
-          </div>
+          ${canWrite || canDelete ? `<div class="d-flex gap-1">
+            ${canWrite ? `<button class="btn btn-sm btn-outline-secondary" title="Editar" onclick="Granjas.edit(${g.id})"><i class="bi bi-pencil"></i></button>` : ''}
+            ${canDelete ? `<button class="btn btn-sm btn-outline-danger" title="Eliminar" onclick="Granjas.confirmDelete(${g.id})"><i class="bi bi-trash"></i></button>` : ''}
+          </div>` : '<span class="text-muted small">—</span>'}
         </td>
       </tr>
     `).join('');

@@ -9,6 +9,7 @@ import (
 	"github.com/martin/sgp/internal/models"
 	"github.com/martin/sgp/internal/repositories"
 	"github.com/martin/sgp/internal/services"
+	"github.com/martin/sgp/internal/utils"
 )
 
 // SetupRoutes configura todas las rutas de la API
@@ -60,6 +61,9 @@ func SetupRoutes(cfg *config.Config, svc *services.ServiceContainer, repos *repo
 		// =============================================
 		auth := api.Group("/auth")
 		{
+			auth.GET("/config", func(c *gin.Context) {
+				utils.SuccessResponse(c, 200, "", gin.H{"register_enabled": cfg.RegisterEnabled})
+			})
 			auth.POST("/register", authHandler.Registrar)
 			auth.POST("/login", authHandler.Login)
 		}

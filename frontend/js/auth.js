@@ -14,6 +14,15 @@ const Auth = (() => {
     }
 
     bindEvents();
+    applyRegisterVisibility();
+  }
+
+  async function applyRegisterVisibility() {
+    await API.fetchPublicConfig();
+    if (!API.isRegisterEnabled()) {
+      const toggle = document.querySelector('[data-toggle-form="register"]');
+      if (toggle) toggle.closest('.toggle-form').classList.add('d-none');
+    }
   }
 
   function bindEvents() {

@@ -18,8 +18,11 @@ const Estadisticas = (() => {
     const content = document.getElementById('contentArea');
 
     try {
-      const data = await API.get('/granjas');
-      granjas = data.data || [];
+      granjas = API.getGranjas();
+      if (granjas.length === 0) {
+        const data = await API.get('/granjas');
+        granjas = data.data || [];
+      }
     } catch (e) { granjas = []; }
 
     if (granjas.length === 0) {
@@ -28,7 +31,7 @@ const Estadisticas = (() => {
       return;
     }
 
-    granjaSeleccionada = granjas[0].id;
+    granjaSeleccionada = API.getGranjaActivaId() || granjas[0].id;
     const hoy = new Date();
 
     content.innerHTML = `
@@ -170,18 +173,26 @@ const Estadisticas = (() => {
     const mes = document.getElementById('statsMes').value;
     const anio = document.getElementById('statsAnio').value;
     const qs = `granja_id=${granjaSeleccionada}&mes=${mes}&anio=${anio}`;
+    const canVentasStats = Permissions.can(Permissions.P.STATS_VENTAS_READ);
 
     try {
-      const [periodoRes, muertesRes, ventasRes] = await Promise.all([
+      const requests = [
         API.get(`/estadisticas/periodo?${qs}`),
         API.get(`/muertes-lechones/estadisticas?${qs}`),
-        API.get(`/ventas/estadisticas?${qs}`),
-      ]);
+      ];
+      if (canVentasStats) {
+        requests.push(API.get(`/ventas/estadisticas?${qs}`));
+      }
+      const results = await Promise.all(requests);
+      const periodoRes = results[0];
+      const muertesRes = results[1];
+      const ventasRes = canVentasStats ? results[2] : { data: {} };
       renderPeriodo(
         periodoRes.data || {},
         muertesRes.data || {},
-        ventasRes.data  || {},
-        mes, anio
+        ventasRes.data || {},
+        mes, anio,
+        canVentasStats
       );
     } catch (e) {
       document.getElementById('periodoStats').innerHTML = `<div class="col-12"><div class="alert alert-danger">Error: ${e.message}</div></div>`;
@@ -249,7 +260,7 @@ const Estadisticas = (() => {
       + '</div></div></div>';
   }
 
-  function renderPeriodo(s, muertes, ventas, mes, anio) {
+  function renderPeriodo(s, muertes, ventas, mes, anio, showVentas = true) {
     const partos   = s.partos    || {};
     const destetes = s.destetes  || {};
     const srvStats = s.servicios || {};
@@ -307,7 +318,7 @@ const Estadisticas = (() => {
     ).join('');
     if (!tipoRows) tipoRows = '<div class="text-center text-muted py-2 small">Sin ventas en este periodo</div>';
 
-    const cardVentas = '<div class="col-md-6">'
+    const cardVentas = showVentas ? ('<div class="col-md-6">'
       + '<div class="table-container h-100">'
       + '<div class="table-header"><h5><i class="bi bi-cart-check me-2" style="color:#059669;"></i>Ventas</h5></div>'
       + '<div class="p-3">'
@@ -317,7 +328,7 @@ const Estadisticas = (() => {
       + renderMetricRow('Monto total', '$' + formatMonto(totalMontoVentas), '#7c3aed')
       + '<div style="border-top:1px solid #f3f4f6; margin:0.5rem 0;"></div>'
       + tipoRows
-      + '</div></div></div>';
+      + '</div></div></div>') : '';
 
     const html = cardPrenez + cardParto
       + '<div class="col-md-6"><div class="table-container h-100"><div class="table-header">'
