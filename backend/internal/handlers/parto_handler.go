@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/martin/sgp/internal/authz"
+	"github.com/martin/sgp/internal/repositories"
 	"github.com/martin/sgp/internal/services"
 	"github.com/martin/sgp/internal/utils"
 )
@@ -11,11 +13,12 @@ import (
 // PartoHandler maneja los endpoints de partos
 type PartoHandler struct {
 	service *services.PartoService
+	authDeps
 }
 
 // NewPartoHandler crea una nueva instancia del handler
-func NewPartoHandler(service *services.PartoService) *PartoHandler {
-	return &PartoHandler{service: service}
+func NewPartoHandler(service *services.PartoService, authzSvc *authz.Service, repos *repositories.RepositoryContainer) *PartoHandler {
+	return &PartoHandler{service: service, authDeps: newAuthDeps(authzSvc, repos)}
 }
 
 // Crear godoc
@@ -24,6 +27,9 @@ func (h *PartoHandler) Crear(c *gin.Context) {
 	var input services.CrearPartoInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	if !requireCerdaForCreate(c, h.authz, h.repos, input.CerdaID, authz.PermRecursoWrite) {
 		return
 	}
 
@@ -44,6 +50,9 @@ func (h *PartoHandler) ObtenerPorID(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
 		return
 	}
+	if !requireOnParto(c, h.authz, h.repos, id, authz.PermGranjaRead) {
+		return
+	}
 
 	parto, err := h.service.ObtenerPorID(id)
 	if err != nil {
@@ -62,6 +71,9 @@ func (h *PartoHandler) ListarPorCerda(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID de cerda inválido")
 		return
 	}
+	if !requireOnCerda(c, h.authz, h.repos, cerdaID, authz.PermGranjaRead) {
+		return
+	}
 
 	partos, err := h.service.ListarPorCerda(cerdaID)
 	if err != nil {
@@ -75,6 +87,10 @@ func (h *PartoHandler) ListarPorCerda(c *gin.Context) {
 // ListarPorPeriodo godoc
 // GET /api/partos?mes=1&anio=2026&granja_id=1
 func (h *PartoHandler) ListarPorPeriodo(c *gin.Context) {
+	if !requireGranjaQuery(c, h.authz, h.repos, authz.PermGranjaRead) {
+		return
+	}
+
 	mes := getIntQuery(c, "mes", 0)
 	anio := getIntQuery(c, "anio", 0)
 	granjaID := getOptionalUintQuery(c, "granja_id")
@@ -96,6 +112,9 @@ func (h *PartoHandler) Actualizar(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
 		return
 	}
+	if !requireOnParto(c, h.authz, h.repos, id, authz.PermRecursoWrite) {
+		return
+	}
 
 	var input services.ActualizarPartoInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -115,6 +134,10 @@ func (h *PartoHandler) Actualizar(c *gin.Context) {
 // GetEstadisticas godoc
 // GET /api/partos/estadisticas?mes=1&anio=2026&granja_id=1
 func (h *PartoHandler) GetEstadisticas(c *gin.Context) {
+	if !requireGranjaQuery(c, h.authz, h.repos, authz.PermStatsRead) {
+		return
+	}
+
 	mes := getIntQuery(c, "mes", 0)
 	anio := getIntQuery(c, "anio", 0)
 	granjaID := getOptionalUintQuery(c, "granja_id")

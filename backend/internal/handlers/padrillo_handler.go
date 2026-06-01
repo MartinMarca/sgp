@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/martin/sgp/internal/authz"
+	"github.com/martin/sgp/internal/repositories"
 	"github.com/martin/sgp/internal/services"
 	"github.com/martin/sgp/internal/utils"
 )
@@ -11,11 +13,12 @@ import (
 // PadrilloHandler maneja los endpoints de padrillos
 type PadrilloHandler struct {
 	service *services.PadrilloService
+	authDeps
 }
 
 // NewPadrilloHandler crea una nueva instancia del handler
-func NewPadrilloHandler(service *services.PadrilloService) *PadrilloHandler {
-	return &PadrilloHandler{service: service}
+func NewPadrilloHandler(service *services.PadrilloService, authzSvc *authz.Service, repos *repositories.RepositoryContainer) *PadrilloHandler {
+	return &PadrilloHandler{service: service, authDeps: newAuthDeps(authzSvc, repos)}
 }
 
 // CrearEnGranja godoc
@@ -24,6 +27,9 @@ func (h *PadrilloHandler) CrearEnGranja(c *gin.Context) {
 	granjaID, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID de granja inválido")
+		return
+	}
+	if !requireGranja(c, h.authz, h.repos, granjaID, authz.PermPadrilloWrite) {
 		return
 	}
 
@@ -51,6 +57,9 @@ func (h *PadrilloHandler) ObtenerPorID(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
 		return
 	}
+	if !requireOnPadrillo(c, h.authz, h.repos, id, authz.PermGranjaRead) {
+		return
+	}
 
 	padrillo, err := h.service.ObtenerPorID(id)
 	if err != nil {
@@ -67,6 +76,9 @@ func (h *PadrilloHandler) ListarPorGranja(c *gin.Context) {
 	granjaID, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID de granja inválido")
+		return
+	}
+	if !requireGranja(c, h.authz, h.repos, granjaID, authz.PermGranjaRead) {
 		return
 	}
 
@@ -87,6 +99,9 @@ func (h *PadrilloHandler) Actualizar(c *gin.Context) {
 	id, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
+		return
+	}
+	if !requireOnPadrillo(c, h.authz, h.repos, id, authz.PermPadrilloWrite) {
 		return
 	}
 
@@ -113,6 +128,9 @@ func (h *PadrilloHandler) DarDeBaja(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
 		return
 	}
+	if !requireOnPadrillo(c, h.authz, h.repos, id, authz.PermPadrilloDelete) {
+		return
+	}
 
 	var input services.BajaPadrilloInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -135,6 +153,9 @@ func (h *PadrilloHandler) GetEstadisticas(c *gin.Context) {
 	id, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
+		return
+	}
+	if !requireOnPadrillo(c, h.authz, h.repos, id, authz.PermStatsRead) {
 		return
 	}
 

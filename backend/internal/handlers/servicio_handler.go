@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/martin/sgp/internal/authz"
+	"github.com/martin/sgp/internal/repositories"
 	"github.com/martin/sgp/internal/services"
 	"github.com/martin/sgp/internal/utils"
 )
@@ -11,11 +13,12 @@ import (
 // ServicioHandler maneja los endpoints de servicios
 type ServicioHandler struct {
 	service *services.ServicioService
+	authDeps
 }
 
 // NewServicioHandler crea una nueva instancia del handler
-func NewServicioHandler(service *services.ServicioService) *ServicioHandler {
-	return &ServicioHandler{service: service}
+func NewServicioHandler(service *services.ServicioService, authzSvc *authz.Service, repos *repositories.RepositoryContainer) *ServicioHandler {
+	return &ServicioHandler{service: service, authDeps: newAuthDeps(authzSvc, repos)}
 }
 
 // Crear godoc
@@ -24,6 +27,9 @@ func (h *ServicioHandler) Crear(c *gin.Context) {
 	var input services.CrearServicioInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+	if !requireCerdaForCreate(c, h.authz, h.repos, input.CerdaID, authz.PermRecursoWrite) {
 		return
 	}
 
@@ -44,6 +50,9 @@ func (h *ServicioHandler) ObtenerPorID(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
 		return
 	}
+	if !requireOnServicio(c, h.authz, h.repos, id, authz.PermGranjaRead) {
+		return
+	}
 
 	servicio, err := h.service.ObtenerPorID(id)
 	if err != nil {
@@ -62,6 +71,9 @@ func (h *ServicioHandler) ListarPorCerda(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID de cerda inválido")
 		return
 	}
+	if !requireOnCerda(c, h.authz, h.repos, cerdaID, authz.PermGranjaRead) {
+		return
+	}
 
 	servicios, err := h.service.ListarPorCerda(cerdaID)
 	if err != nil {
@@ -75,6 +87,10 @@ func (h *ServicioHandler) ListarPorCerda(c *gin.Context) {
 // ListarPorPeriodo godoc
 // GET /api/servicios?mes=1&anio=2026&granja_id=1
 func (h *ServicioHandler) ListarPorPeriodo(c *gin.Context) {
+	if !requireGranjaQuery(c, h.authz, h.repos, authz.PermGranjaRead) {
+		return
+	}
+
 	mes := getIntQuery(c, "mes", 0)
 	anio := getIntQuery(c, "anio", 0)
 	granjaID := getOptionalUintQuery(c, "granja_id")
@@ -91,6 +107,10 @@ func (h *ServicioHandler) ListarPorPeriodo(c *gin.Context) {
 // ListarPendientesConfirmacion godoc
 // GET /api/servicios/pendientes?granja_id=1
 func (h *ServicioHandler) ListarPendientesConfirmacion(c *gin.Context) {
+	if !requireGranjaQuery(c, h.authz, h.repos, authz.PermGranjaRead) {
+		return
+	}
+
 	granjaID := getOptionalUintQuery(c, "granja_id")
 
 	servicios, err := h.service.ListarPendientesConfirmacion(granjaID)
@@ -108,6 +128,9 @@ func (h *ServicioHandler) Actualizar(c *gin.Context) {
 	id, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
+		return
+	}
+	if !requireOnServicio(c, h.authz, h.repos, id, authz.PermRecursoWrite) {
 		return
 	}
 
@@ -134,9 +157,11 @@ func (h *ServicioHandler) ConfirmarPrenez(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
 		return
 	}
+	if !requireOnServicio(c, h.authz, h.repos, id, authz.PermRecursoWrite) {
+		return
+	}
 
 	var input services.ConfirmarPrenezInput
-	// El body es opcional (puede confirmar con fecha actual)
 	_ = c.ShouldBindJSON(&input)
 
 	servicio, err := h.service.ConfirmarPrenez(id, input)
@@ -154,6 +179,9 @@ func (h *ServicioHandler) CancelarPrenez(c *gin.Context) {
 	id, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
+		return
+	}
+	if !requireOnServicio(c, h.authz, h.repos, id, authz.PermRecursoWrite) {
 		return
 	}
 

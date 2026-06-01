@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/martin/sgp/internal/authz"
+	"github.com/martin/sgp/internal/repositories"
 	"github.com/martin/sgp/internal/services"
 	"github.com/martin/sgp/internal/utils"
 )
@@ -11,11 +13,12 @@ import (
 // CerdaHandler maneja los endpoints de cerdas
 type CerdaHandler struct {
 	service *services.CerdaService
+	authDeps
 }
 
 // NewCerdaHandler crea una nueva instancia del handler
-func NewCerdaHandler(service *services.CerdaService) *CerdaHandler {
-	return &CerdaHandler{service: service}
+func NewCerdaHandler(service *services.CerdaService, authzSvc *authz.Service, repos *repositories.RepositoryContainer) *CerdaHandler {
+	return &CerdaHandler{service: service, authDeps: newAuthDeps(authzSvc, repos)}
 }
 
 // CrearEnGranja godoc
@@ -24,6 +27,9 @@ func (h *CerdaHandler) CrearEnGranja(c *gin.Context) {
 	granjaID, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID de granja inválido")
+		return
+	}
+	if !requireGranja(c, h.authz, h.repos, granjaID, authz.PermCerdaWrite) {
 		return
 	}
 
@@ -51,6 +57,9 @@ func (h *CerdaHandler) ObtenerPorID(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
 		return
 	}
+	if !requireOnCerda(c, h.authz, h.repos, id, authz.PermGranjaRead) {
+		return
+	}
 
 	cerda, err := h.service.ObtenerPorID(id)
 	if err != nil {
@@ -67,6 +76,9 @@ func (h *CerdaHandler) ListarPorGranja(c *gin.Context) {
 	granjaID, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID de granja inválido")
+		return
+	}
+	if !requireGranja(c, h.authz, h.repos, granjaID, authz.PermGranjaRead) {
 		return
 	}
 
@@ -90,6 +102,9 @@ func (h *CerdaHandler) ListarPorEstado(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "El parámetro estado es requerido")
 		return
 	}
+	if !requireGranjaQuery(c, h.authz, h.repos, authz.PermGranjaRead) {
+		return
+	}
 
 	granjaID := getOptionalUintQuery(c, "granja_id")
 
@@ -108,6 +123,9 @@ func (h *CerdaHandler) Actualizar(c *gin.Context) {
 	id, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
+		return
+	}
+	if !requireOnCerda(c, h.authz, h.repos, id, authz.PermCerdaWrite) {
 		return
 	}
 
@@ -134,6 +152,9 @@ func (h *CerdaHandler) DarDeBaja(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
 		return
 	}
+	if !requireOnCerda(c, h.authz, h.repos, id, authz.PermCerdaDelete) {
+		return
+	}
 
 	var input services.BajaCerdaInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -158,6 +179,9 @@ func (h *CerdaHandler) GetHistorial(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
 		return
 	}
+	if !requireOnCerda(c, h.authz, h.repos, id, authz.PermGranjaRead) {
+		return
+	}
 
 	historial, err := h.service.GetHistorial(id)
 	if err != nil {
@@ -174,6 +198,9 @@ func (h *CerdaHandler) GetEstadisticas(c *gin.Context) {
 	id, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
+		return
+	}
+	if !requireOnCerda(c, h.authz, h.repos, id, authz.PermStatsRead) {
 		return
 	}
 

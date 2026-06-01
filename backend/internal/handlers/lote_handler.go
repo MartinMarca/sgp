@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/martin/sgp/internal/authz"
+	"github.com/martin/sgp/internal/repositories"
 	"github.com/martin/sgp/internal/services"
 	"github.com/martin/sgp/internal/utils"
 )
@@ -11,11 +13,12 @@ import (
 // LoteHandler maneja los endpoints de lotes
 type LoteHandler struct {
 	service *services.LoteService
+	authDeps
 }
 
 // NewLoteHandler crea una nueva instancia del handler
-func NewLoteHandler(service *services.LoteService) *LoteHandler {
-	return &LoteHandler{service: service}
+func NewLoteHandler(service *services.LoteService, authzSvc *authz.Service, repos *repositories.RepositoryContainer) *LoteHandler {
+	return &LoteHandler{service: service, authDeps: newAuthDeps(authzSvc, repos)}
 }
 
 // CrearEnCorral godoc
@@ -24,6 +27,9 @@ func (h *LoteHandler) CrearEnCorral(c *gin.Context) {
 	corralID, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID de corral inválido")
+		return
+	}
+	if !requireOnCorral(c, h.authz, h.repos, corralID, authz.PermRecursoWrite) {
 		return
 	}
 
@@ -51,6 +57,9 @@ func (h *LoteHandler) ObtenerPorID(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
 		return
 	}
+	if !requireOnLote(c, h.authz, h.repos, id, authz.PermGranjaRead) {
+		return
+	}
 
 	lote, err := h.service.ObtenerPorID(id)
 	if err != nil {
@@ -69,6 +78,9 @@ func (h *LoteHandler) ListarPorCorral(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID de corral inválido")
 		return
 	}
+	if !requireOnCorral(c, h.authz, h.repos, corralID, authz.PermGranjaRead) {
+		return
+	}
 
 	estado := getOptionalStringQuery(c, "estado")
 
@@ -84,6 +96,10 @@ func (h *LoteHandler) ListarPorCorral(c *gin.Context) {
 // ListarPorEstado godoc
 // GET /api/lotes?estado=activo
 func (h *LoteHandler) ListarPorEstado(c *gin.Context) {
+	if !requireAdmin(c, h.repos, h.authz) {
+		return
+	}
+
 	estado := c.DefaultQuery("estado", "activo")
 
 	lotes, err := h.service.ListarPorEstado(estado)
@@ -101,6 +117,9 @@ func (h *LoteHandler) Actualizar(c *gin.Context) {
 	id, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
+		return
+	}
+	if !requireOnLote(c, h.authz, h.repos, id, authz.PermRecursoWrite) {
 		return
 	}
 
@@ -127,6 +146,9 @@ func (h *LoteHandler) Cerrar(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
 		return
 	}
+	if !requireOnLote(c, h.authz, h.repos, id, authz.PermRecursoWrite) {
+		return
+	}
 
 	var input services.CerrarLoteInput
 	if err := c.ShouldBindJSON(&input); err != nil {
@@ -149,6 +171,9 @@ func (h *LoteHandler) GetDestetes(c *gin.Context) {
 	id, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
+		return
+	}
+	if !requireOnLote(c, h.authz, h.repos, id, authz.PermGranjaRead) {
 		return
 	}
 

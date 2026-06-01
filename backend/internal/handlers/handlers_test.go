@@ -286,7 +286,7 @@ func TestE2E_CicloMaternidad(t *testing.T) {
 	}
 
 	// 11. Calendario
-	w = doRequest(t, router, "GET", "/api/calendario?dias=365", token, nil)
+	w = doRequest(t, router, "GET", "/api/calendario?granja_id=1&dias=365", token, nil)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Calendario: %d %s", w.Code, w.Body.String())
 	}
@@ -386,5 +386,78 @@ func TestE2E_UsuariosRoles(t *testing.T) {
 	w = doRequest(t, router, "GET", "/api/usuarios/2", tokenEmp, nil)
 	if w.Code != http.StatusOK {
 		t.Fatalf("Empleado ver self: esperaba 200, obtuvo %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestE2E_AuthzRestricciones(t *testing.T) {
+	_, router := setupRouter(t)
+	tokenProp := getAuthToken(t, router)
+
+	// Granja y cerda del propietario
+	w := doRequest(t, router, "POST", "/api/granjas", tokenProp, map[string]string{"nombre": "Granja Authz"})
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Crear granja: %d %s", w.Code, w.Body.String())
+	}
+	w = doRequest(t, router, "POST", "/api/granjas/1/cerdas", tokenProp, map[string]interface{}{
+		"numero_caravana": "C-AUTHZ", "estado": "disponible",
+	})
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Crear cerda: %d %s", w.Code, w.Body.String())
+	}
+
+	// Segundo propietario con granja ajena
+	w = doRequest(t, router, "POST", "/api/auth/register", "", map[string]string{
+		"username": "otroprop", "email": "otro@test.com", "password": "123456",
+	})
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Register otro prop: %d %s", w.Code, w.Body.String())
+	}
+	w = doRequest(t, router, "POST", "/api/auth/login", "", map[string]string{
+		"username": "otroprop", "password": "123456",
+	})
+	resp := parseResponse(t, w)
+	tokenOtro := resp.Data.(map[string]interface{})["token"].(string)
+	w = doRequest(t, router, "POST", "/api/granjas", tokenOtro, map[string]string{"nombre": "Granja Ajena"})
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Crear granja ajena: %d %s", w.Code, w.Body.String())
+	}
+
+	// Propietario crea empleado
+	w = doRequest(t, router, "POST", "/api/usuarios", tokenProp, map[string]interface{}{
+		"username": "empauthz", "email": "empauthz@test.com", "password": "123456", "rol": "empleado",
+	})
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Crear empleado: %d %s", w.Code, w.Body.String())
+	}
+	w = doRequest(t, router, "POST", "/api/auth/login", "", map[string]string{
+		"username": "empauthz", "password": "123456",
+	})
+	resp = parseResponse(t, w)
+	tokenEmp := resp.Data.(map[string]interface{})["token"].(string)
+
+	// Empleado no puede acceder a ventas (middleware)
+	w = doRequest(t, router, "GET", "/api/ventas?granja_id=1", tokenEmp, nil)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("Empleado ventas: esperaba 403, obtuvo %d", w.Code)
+	}
+
+	// Empleado no puede dar de baja cerda
+	w = doRequest(t, router, "POST", "/api/cerdas/1/baja", tokenEmp, map[string]string{
+		"motivo_baja": "venta",
+	})
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("Empleado baja cerda: esperaba 403, obtuvo %d", w.Code)
+	}
+
+	// Propietario sí puede listar ventas (vacío)
+	w = doRequest(t, router, "GET", "/api/ventas?granja_id=1", tokenProp, nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Propietario ventas: esperaba 200, obtuvo %d: %s", w.Code, w.Body.String())
+	}
+
+	// Propietario no accede a granja ajena (id=2)
+	w = doRequest(t, router, "GET", "/api/granjas/2", tokenProp, nil)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("Granja ajena: esperaba 403, obtuvo %d", w.Code)
 	}
 }

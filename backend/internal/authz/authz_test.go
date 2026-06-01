@@ -9,8 +9,8 @@ import (
 
 func TestHasPermission_AdminTieneTodo(t *testing.T) {
 	perms := authz.PermisosEfectivos(models.RolAdmin)
-	if len(perms) != 13 {
-		t.Fatalf("admin debería tener 13 permisos, obtuvo %d", len(perms))
+	if len(perms) != 14 {
+		t.Fatalf("admin debería tener 14 permisos, obtuvo %d", len(perms))
 	}
 }
 

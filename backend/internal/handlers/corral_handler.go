@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/martin/sgp/internal/authz"
+	"github.com/martin/sgp/internal/repositories"
 	"github.com/martin/sgp/internal/services"
 	"github.com/martin/sgp/internal/utils"
 )
@@ -11,11 +13,12 @@ import (
 // CorralHandler maneja los endpoints de corrales
 type CorralHandler struct {
 	service *services.CorralService
+	authDeps
 }
 
 // NewCorralHandler crea una nueva instancia del handler
-func NewCorralHandler(service *services.CorralService) *CorralHandler {
-	return &CorralHandler{service: service}
+func NewCorralHandler(service *services.CorralService, authzSvc *authz.Service, repos *repositories.RepositoryContainer) *CorralHandler {
+	return &CorralHandler{service: service, authDeps: newAuthDeps(authzSvc, repos)}
 }
 
 // CrearEnGranja godoc
@@ -24,6 +27,9 @@ func (h *CorralHandler) CrearEnGranja(c *gin.Context) {
 	granjaID, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID de granja inválido")
+		return
+	}
+	if !requireGranja(c, h.authz, h.repos, granjaID, authz.PermRecursoWrite) {
 		return
 	}
 
@@ -51,6 +57,9 @@ func (h *CorralHandler) ObtenerPorID(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
 		return
 	}
+	if !requireOnCorral(c, h.authz, h.repos, id, authz.PermGranjaRead) {
+		return
+	}
 
 	corral, err := h.service.ObtenerPorID(id)
 	if err != nil {
@@ -67,6 +76,9 @@ func (h *CorralHandler) ListarPorGranja(c *gin.Context) {
 	granjaID, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID de granja inválido")
+		return
+	}
+	if !requireGranja(c, h.authz, h.repos, granjaID, authz.PermGranjaRead) {
 		return
 	}
 
@@ -87,6 +99,9 @@ func (h *CorralHandler) Actualizar(c *gin.Context) {
 	id, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
+		return
+	}
+	if !requireOnCorral(c, h.authz, h.repos, id, authz.PermRecursoWrite) {
 		return
 	}
 
@@ -113,6 +128,9 @@ func (h *CorralHandler) Eliminar(c *gin.Context) {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
 		return
 	}
+	if !requireOnCorral(c, h.authz, h.repos, id, authz.PermRecursoWrite) {
+		return
+	}
 
 	if err := h.service.Eliminar(id); err != nil {
 		utils.ErrorResponse(c, mapErrorToStatus(err), err.Error())
@@ -128,6 +146,9 @@ func (h *CorralHandler) GetOcupacion(c *gin.Context) {
 	id, err := getIDParam(c, "id")
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "ID inválido")
+		return
+	}
+	if !requireOnCorral(c, h.authz, h.repos, id, authz.PermGranjaRead) {
 		return
 	}
 

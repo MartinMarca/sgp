@@ -72,6 +72,137 @@ func requirePerm(c *gin.Context, authzSvc *authz.Service, repos *repositories.Re
 	return true
 }
 
+func authzFail(c *gin.Context, authzSvc *authz.Service, repos *repositories.RepositoryContainer, err error) bool {
+	if err == nil {
+		return true
+	}
+	_, actorErr := getActor(c, repos)
+	if actorErr != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	utils.ErrorResponse(c, mapErrorToStatus(err), err.Error())
+	return false
+}
+
+func requireOnCerda(c *gin.Context, authzSvc *authz.Service, repos *repositories.RepositoryContainer, cerdaID uint, perm string) bool {
+	actor, err := getActor(c, repos)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	return authzFail(c, authzSvc, repos, authzSvc.RequireOnCerda(actor, cerdaID, perm))
+}
+
+func requireOnPadrillo(c *gin.Context, authzSvc *authz.Service, repos *repositories.RepositoryContainer, padrilloID uint, perm string) bool {
+	actor, err := getActor(c, repos)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	return authzFail(c, authzSvc, repos, authzSvc.RequireOnPadrillo(actor, padrilloID, perm))
+}
+
+func requireOnCorral(c *gin.Context, authzSvc *authz.Service, repos *repositories.RepositoryContainer, corralID uint, perm string) bool {
+	actor, err := getActor(c, repos)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	return authzFail(c, authzSvc, repos, authzSvc.RequireOnCorral(actor, corralID, perm))
+}
+
+func requireOnLote(c *gin.Context, authzSvc *authz.Service, repos *repositories.RepositoryContainer, loteID uint, perm string) bool {
+	actor, err := getActor(c, repos)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	return authzFail(c, authzSvc, repos, authzSvc.RequireOnLote(actor, loteID, perm))
+}
+
+func requireOnVenta(c *gin.Context, authzSvc *authz.Service, repos *repositories.RepositoryContainer, ventaID uint, perm string) bool {
+	actor, err := getActor(c, repos)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	return authzFail(c, authzSvc, repos, authzSvc.RequireOnVenta(actor, ventaID, perm))
+}
+
+func requireOnServicio(c *gin.Context, authzSvc *authz.Service, repos *repositories.RepositoryContainer, servicioID uint, perm string) bool {
+	actor, err := getActor(c, repos)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	return authzFail(c, authzSvc, repos, authzSvc.RequireOnServicio(actor, servicioID, perm))
+}
+
+func requireOnParto(c *gin.Context, authzSvc *authz.Service, repos *repositories.RepositoryContainer, partoID uint, perm string) bool {
+	actor, err := getActor(c, repos)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	return authzFail(c, authzSvc, repos, authzSvc.RequireOnParto(actor, partoID, perm))
+}
+
+func requireOnDestete(c *gin.Context, authzSvc *authz.Service, repos *repositories.RepositoryContainer, desteteID uint, perm string) bool {
+	actor, err := getActor(c, repos)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	return authzFail(c, authzSvc, repos, authzSvc.RequireOnDestete(actor, desteteID, perm))
+}
+
+func requireOnMuerte(c *gin.Context, authzSvc *authz.Service, repos *repositories.RepositoryContainer, muerteID uint, perm string) bool {
+	actor, err := getActor(c, repos)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	return authzFail(c, authzSvc, repos, authzSvc.RequireOnMuerte(actor, muerteID, perm))
+}
+
+func requireGranjaQuery(c *gin.Context, authzSvc *authz.Service, repos *repositories.RepositoryContainer, perm string) bool {
+	actor, err := getActor(c, repos)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	granjaID := getOptionalUintQuery(c, "granja_id")
+	return authzFail(c, authzSvc, repos, authzSvc.RequireGranjaQuery(actor, granjaID, perm))
+}
+
+func requireAdmin(c *gin.Context, repos *repositories.RepositoryContainer, authzSvc *authz.Service) bool {
+	actor, err := getActor(c, repos)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	return authzFail(c, authzSvc, repos, authzSvc.RequireAdminOnly(actor))
+}
+
+func requireCerdaForCreate(c *gin.Context, authzSvc *authz.Service, repos *repositories.RepositoryContainer, cerdaID uint, perm string) bool {
+	actor, err := getActor(c, repos)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	return authzFail(c, authzSvc, repos, authzSvc.ValidateCerdaIDForCreate(actor, cerdaID, perm))
+}
+
+func requireGranjaForCreate(c *gin.Context, authzSvc *authz.Service, repos *repositories.RepositoryContainer, granjaID uint, perm string) bool {
+	actor, err := getActor(c, repos)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	return authzFail(c, authzSvc, repos, authzSvc.ValidateGranjaIDForCreate(actor, granjaID, perm))
+}
+
 // getOptionalIntQuery extrae un query param int opcional
 func getOptionalIntQuery(c *gin.Context, param string) *int {
 	val := c.Query(param)

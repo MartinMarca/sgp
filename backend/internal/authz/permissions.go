@@ -17,6 +17,7 @@ const (
 	PermVentaWrite      = "venta:write"
 	PermStatsRead       = "stats:read"
 	PermStatsVentasRead = "stats:ventas:read"
+	PermRecursoWrite    = "recurso:write"
 )
 
 var rolePermissions = map[string]map[string]bool{
@@ -34,6 +35,7 @@ var rolePermissions = map[string]map[string]bool{
 		PermVentaWrite:      true,
 		PermStatsRead:       true,
 		PermStatsVentasRead: true,
+		PermRecursoWrite:    true,
 	},
 	models.RolPropietario: {
 		PermUsersManage:     true,
@@ -48,12 +50,14 @@ var rolePermissions = map[string]map[string]bool{
 		PermVentaWrite:      true,
 		PermStatsRead:       true,
 		PermStatsVentasRead: true,
+		PermRecursoWrite:    true,
 	},
 	models.RolEmpleado: {
 		PermGranjaRead:     true,
 		PermCerdaWrite:     true,
 		PermPadrilloWrite:  true,
 		PermStatsRead:      true,
+		PermRecursoWrite:   true,
 	},
 }
 
@@ -85,6 +89,7 @@ func PermisosEfectivos(rol string) []string {
 		PermVentaWrite,
 		PermStatsRead,
 		PermStatsVentasRead,
+		PermRecursoWrite,
 	}
 	if rol == models.RolAdmin {
 		return all

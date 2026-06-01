@@ -6,6 +6,7 @@ import (
 	"github.com/martin/sgp/internal/config"
 	"github.com/martin/sgp/internal/handlers"
 	"github.com/martin/sgp/internal/middleware"
+	"github.com/martin/sgp/internal/models"
 	"github.com/martin/sgp/internal/repositories"
 	"github.com/martin/sgp/internal/services"
 )
@@ -30,17 +31,17 @@ func SetupRoutes(cfg *config.Config, svc *services.ServiceContainer, repos *repo
 	// Inicializar handlers
 	authHandler := handlers.NewAuthHandler(svc.Auth, repos)
 	granjaHandler := handlers.NewGranjaHandler(svc.Granja, authzSvc, repos)
-	corralHandler := handlers.NewCorralHandler(svc.Corral)
-	loteHandler := handlers.NewLoteHandler(svc.Lote)
-	cerdaHandler := handlers.NewCerdaHandler(svc.Cerda)
-	padrilloHandler := handlers.NewPadrilloHandler(svc.Padrillo)
-	servicioHandler := handlers.NewServicioHandler(svc.Servicio)
-	partoHandler := handlers.NewPartoHandler(svc.Parto)
-	desteteHandler := handlers.NewDesteteHandler(svc.Destete)
-	calendarioHandler := handlers.NewCalendarioHandler(svc.Calendario)
-	muerteLechonHandler := handlers.NewMuerteLechonHandler(svc.MuerteLechon)
-	ventaHandler := handlers.NewVentaHandler(svc.Venta)
-	estadisticasHandler := handlers.NewEstadisticasHandler(svc.Estadisticas)
+	corralHandler := handlers.NewCorralHandler(svc.Corral, authzSvc, repos)
+	loteHandler := handlers.NewLoteHandler(svc.Lote, authzSvc, repos)
+	cerdaHandler := handlers.NewCerdaHandler(svc.Cerda, authzSvc, repos)
+	padrilloHandler := handlers.NewPadrilloHandler(svc.Padrillo, authzSvc, repos)
+	servicioHandler := handlers.NewServicioHandler(svc.Servicio, authzSvc, repos)
+	partoHandler := handlers.NewPartoHandler(svc.Parto, authzSvc, repos)
+	desteteHandler := handlers.NewDesteteHandler(svc.Destete, authzSvc, repos)
+	calendarioHandler := handlers.NewCalendarioHandler(svc.Calendario, authzSvc, repos)
+	muerteLechonHandler := handlers.NewMuerteLechonHandler(svc.MuerteLechon, authzSvc, repos)
+	ventaHandler := handlers.NewVentaHandler(svc.Venta, authzSvc, repos)
+	estadisticasHandler := handlers.NewEstadisticasHandler(svc.Estadisticas, authzSvc, repos)
 	usuarioHandler := handlers.NewUsuarioHandler(svc.Usuario, authzSvc, repos)
 
 	// Grupo base de la API
@@ -192,6 +193,7 @@ func SetupRoutes(cfg *config.Config, svc *services.ServiceContainer, repos *repo
 
 			// --- Ventas ---
 			ventas := protected.Group("/ventas")
+			ventas.Use(middleware.BlockRoles(models.RolEmpleado))
 			{
 				ventas.POST("", ventaHandler.Crear)
 				ventas.GET("", ventaHandler.ListarPorPeriodo)
