@@ -41,6 +41,7 @@ func SetupRoutes(cfg *config.Config, svc *services.ServiceContainer, repos *repo
 	muerteLechonHandler := handlers.NewMuerteLechonHandler(svc.MuerteLechon)
 	ventaHandler := handlers.NewVentaHandler(svc.Venta)
 	estadisticasHandler := handlers.NewEstadisticasHandler(svc.Estadisticas)
+	usuarioHandler := handlers.NewUsuarioHandler(svc.Usuario, authzSvc, repos)
 
 	// Grupo base de la API
 	api := router.Group("/api")
@@ -69,6 +70,16 @@ func SetupRoutes(cfg *config.Config, svc *services.ServiceContainer, repos *repo
 		protected.Use(middleware.Auth(cfg))
 		{
 			protected.GET("/auth/me", authHandler.Me)
+
+			// --- Usuarios ---
+			usuarios := protected.Group("/usuarios")
+			{
+				usuarios.GET("", usuarioHandler.Listar)
+				usuarios.POST("", usuarioHandler.Crear)
+				usuarios.GET("/:id", usuarioHandler.ObtenerPorID)
+				usuarios.PUT("/:id", usuarioHandler.Actualizar)
+				usuarios.DELETE("/:id", usuarioHandler.Eliminar)
+			}
 
 			// --- Granjas ---
 			granjas := protected.Group("/granjas")

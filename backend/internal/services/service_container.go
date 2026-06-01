@@ -22,6 +22,7 @@ type ServiceContainer struct {
 	Venta          *VentaService
 	Calendario     *CalendarioService
 	Estadisticas   *EstadisticasService
+	Usuario        *UsuarioService
 }
 
 // ServiceConfig configuración para inicializar los services
@@ -47,5 +48,6 @@ func NewServiceContainer(db *gorm.DB, repos *repositories.RepositoryContainer, c
 		Venta:        NewVentaService(db, repos),
 		Calendario:   NewCalendarioService(repos),
 		Estadisticas: NewEstadisticasService(repos),
+		Usuario:      NewUsuarioService(repos),
 	}
 }

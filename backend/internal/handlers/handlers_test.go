@@ -324,3 +324,67 @@ func TestE2E_ValidacionPartoHMDistintoVivos(t *testing.T) {
 		t.Fatalf("Parto inválido: esperaba 422, obtuvo %d: %s", w.Code, w.Body.String())
 	}
 }
+
+// ============================================================
+// Tests E2E - Usuarios (roles)
+// ============================================================
+
+func TestE2E_UsuariosRoles(t *testing.T) {
+	_, router := setupRouter(t)
+	tokenProp := getAuthToken(t, router)
+
+	// Propietario crea empleado
+	w := doRequest(t, router, "POST", "/api/usuarios", tokenProp, map[string]interface{}{
+		"username": "empleado1",
+		"email":    "empleado1@test.com",
+		"password": "123456",
+		"rol":      "empleado",
+	})
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Crear empleado: esperaba 201, obtuvo %d: %s", w.Code, w.Body.String())
+	}
+
+	// Propietario no puede crear admin
+	w = doRequest(t, router, "POST", "/api/usuarios", tokenProp, map[string]interface{}{
+		"username": "hacker",
+		"email":    "hacker@test.com",
+		"password": "123456",
+		"rol":      "admin",
+	})
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("Crear admin como propietario: esperaba 403, obtuvo %d", w.Code)
+	}
+
+	// Propietario lista empleados
+	w = doRequest(t, router, "GET", "/api/usuarios", tokenProp, nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Listar usuarios propietario: esperaba 200, obtuvo %d", w.Code)
+	}
+	resp := parseResponse(t, w)
+	list := resp.Data.([]interface{})
+	if len(list) != 1 {
+		t.Fatalf("Propietario debería ver 1 empleado, obtuvo %d", len(list))
+	}
+
+	// Login empleado
+	w = doRequest(t, router, "POST", "/api/auth/login", "", map[string]string{
+		"username": "empleado1", "password": "123456",
+	})
+	if w.Code != http.StatusOK {
+		t.Fatalf("Login empleado: %d %s", w.Code, w.Body.String())
+	}
+	resp = parseResponse(t, w)
+	tokenEmp := resp.Data.(map[string]interface{})["token"].(string)
+
+	// Empleado no puede listar usuarios
+	w = doRequest(t, router, "GET", "/api/usuarios", tokenEmp, nil)
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("Empleado listar usuarios: esperaba 403, obtuvo %d", w.Code)
+	}
+
+	// Empleado puede ver su propio perfil
+	w = doRequest(t, router, "GET", "/api/usuarios/2", tokenEmp, nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Empleado ver self: esperaba 200, obtuvo %d: %s", w.Code, w.Body.String())
+	}
+}

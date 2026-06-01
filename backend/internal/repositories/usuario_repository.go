@@ -71,6 +71,30 @@ func (r *UsuarioRepository) FindAll(activo *bool) ([]models.Usuario, error) {
 	return usuarios, err
 }
 
+// FindByPropietarioID obtiene empleados de un propietario
+func (r *UsuarioRepository) FindByPropietarioID(propietarioID uint, activo *bool) ([]models.Usuario, error) {
+	var usuarios []models.Usuario
+	query := r.db.Where("propietario_id = ? AND rol = ?", propietarioID, models.RolEmpleado)
+
+	if activo != nil {
+		query = query.Where("activo = ?", *activo)
+	}
+
+	err := query.Order("username").Find(&usuarios).Error
+	return usuarios, err
+}
+
+// CountByRol cuenta usuarios activos con un rol
+func (r *UsuarioRepository) CountByRol(rol string, activo *bool) (int64, error) {
+	query := r.db.Model(&models.Usuario{}).Where("rol = ?", rol)
+	if activo != nil {
+		query = query.Where("activo = ?", *activo)
+	}
+	var count int64
+	err := query.Count(&count).Error
+	return count, err
+}
+
 // Update actualiza un usuario
 func (r *UsuarioRepository) Update(usuario *models.Usuario) error {
 	return r.db.Save(usuario).Error

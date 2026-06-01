@@ -52,7 +52,8 @@ func SetupTestDB(t *testing.T) *TestEnv {
 		dbUser, dbPass, dbHost, dbPort, dbName)
 
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
+		Logger:                                   logger.Default.LogMode(logger.Silent),
+		DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	if err != nil {
 		t.Fatalf("Error conectando a DB de test: %v", err)

@@ -10,23 +10,23 @@ var (
 	ErrForbidden    = errors.New("operación no permitida")
 
 	// Cerdas
-	ErrCerdaNoDisponible     = errors.New("la cerda no está en estado disponible")
-	ErrCerdaNoEnServicio     = errors.New("la cerda no está en estado servicio")
-	ErrCerdaNoEnGestacion    = errors.New("la cerda no está en estado gestación")
-	ErrCerdaNoEnCria         = errors.New("la cerda no está en estado cría")
-	ErrCerdaNoActiva         = errors.New("la cerda no está activa")
+	ErrCerdaNoDisponible        = errors.New("la cerda no está en estado disponible")
+	ErrCerdaNoEnServicio        = errors.New("la cerda no está en estado servicio")
+	ErrCerdaNoEnGestacion       = errors.New("la cerda no está en estado gestación")
+	ErrCerdaNoEnCria            = errors.New("la cerda no está en estado cría")
+	ErrCerdaNoActiva            = errors.New("la cerda no está activa")
 	ErrCerdaTieneServicioActivo = errors.New("la cerda tiene un servicio activo, cancele la preñez primero")
-	ErrCaravanaDuplicada     = errors.New("ya existe una cerda/padrillo con ese número de caravana en la granja")
+	ErrCaravanaDuplicada        = errors.New("ya existe una cerda/padrillo con ese número de caravana en la granja")
 
 	// Servicios
 	ErrServicioRequierePadrillo = errors.New("la monta natural requiere un padrillo")
 	ErrServicioRequierePajuela  = errors.New("la inseminación requiere un número de pajuela")
 
 	// Preñez
-	ErrPrenezYaConfirmada   = errors.New("la preñez ya fue confirmada")
-	ErrPrenezYaCancelada    = errors.New("la preñez ya fue cancelada")
-	ErrPrenezNoConfirmada   = errors.New("la preñez no está confirmada")
-	ErrMotivoRequerido      = errors.New("el motivo de cancelación es requerido")
+	ErrPrenezYaConfirmada = errors.New("la preñez ya fue confirmada")
+	ErrPrenezYaCancelada  = errors.New("la preñez ya fue cancelada")
+	ErrPrenezNoConfirmada = errors.New("la preñez no está confirmada")
+	ErrMotivoRequerido    = errors.New("el motivo de cancelación es requerido")
 
 	// Partos
 	ErrNoHayServicioConfirmado = errors.New("no hay servicio con preñez confirmada para esta cerda")
@@ -53,8 +53,13 @@ var (
 	ErrTipoAnimalInvalido = errors.New("el tipo de animal no es válido")
 
 	// Muertes de lechones
-	ErrMuerteRequierePartoOLote  = errors.New("la muerte debe estar asociada a un parto (lactancia) o a un lote (engorde), no ambos")
-	ErrMuertesExcedenVivos       = errors.New("las muertes registradas superan los lechones nacidos vivos del parto")
-	ErrMuertesExcedenLote        = errors.New("las muertes registradas superan los lechones disponibles en el lote")
-	ErrCausaMuerteInvalida       = errors.New("la causa de muerte no es válida")
+	ErrMuerteRequierePartoOLote = errors.New("la muerte debe estar asociada a un parto (lactancia) o a un lote (engorde), no ambos")
+	ErrMuertesExcedenVivos      = errors.New("las muertes registradas superan los lechones nacidos vivos del parto")
+	ErrMuertesExcedenLote       = errors.New("las muertes registradas superan los lechones disponibles en el lote")
+	ErrCausaMuerteInvalida      = errors.New("la causa de muerte no es válida")
+
+	// Usuarios
+	ErrRolInvalido          = errors.New("rol no permitido")
+	ErrUltimoAdmin          = errors.New("no se puede desactivar al único administrador")
+	ErrPropietarioRequerido = errors.New("el empleado debe tener un propietario asignado")
 )

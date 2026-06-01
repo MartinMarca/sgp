@@ -173,7 +173,10 @@ func mapErrorToStatus(err error) int {
 		errors.Is(err, services.ErrMuertesExcedenLote),
 		errors.Is(err, services.ErrCausaMuerteInvalida),
 		errors.Is(err, services.ErrVentaExcedeLote),
-		errors.Is(err, services.ErrTipoAnimalInvalido):
+		errors.Is(err, services.ErrTipoAnimalInvalido),
+		errors.Is(err, services.ErrRolInvalido),
+		errors.Is(err, services.ErrUltimoAdmin),
+		errors.Is(err, services.ErrPropietarioRequerido):
 		return http.StatusUnprocessableEntity
 	default:
 		return http.StatusInternalServerError
