@@ -33,8 +33,8 @@ const (
 // Roles de Usuario (sistema)
 const (
 	RolAdmin       = "admin"
-	RolUsuario     = "usuario"
-	RolVeterinario = "veterinario"
+	RolPropietario = "propietario"
+	RolEmpleado    = "empleado"
 )
 
 // Causas de Muerte de Lechones
@@ -43,13 +43,6 @@ const (
 	CausaMuerteEnfermedad    = "enfermedad"
 	CausaMuerteInanicion     = "inanicion"
 	CausaMuerteOtro          = "otro"
-)
-
-// Roles en Granja (usuario-granja)
-const (
-	RolGranjaPropietario   = "propietario"
-	RolGranjaAdministrador = "administrador"
-	RolGranjaOperador      = "operador"
 )
 
 // AllModels retorna un slice con todos los modelos para migraciones

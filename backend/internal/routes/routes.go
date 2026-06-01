@@ -2,15 +2,18 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/martin/sgp/internal/authz"
 	"github.com/martin/sgp/internal/config"
 	"github.com/martin/sgp/internal/handlers"
 	"github.com/martin/sgp/internal/middleware"
+	"github.com/martin/sgp/internal/repositories"
 	"github.com/martin/sgp/internal/services"
 )
 
 // SetupRoutes configura todas las rutas de la API
-func SetupRoutes(cfg *config.Config, svc *services.ServiceContainer) *gin.Engine {
+func SetupRoutes(cfg *config.Config, svc *services.ServiceContainer, repos *repositories.RepositoryContainer) *gin.Engine {
 	router := gin.Default()
+	authzSvc := authz.NewService(repos)
 
 	// Middleware global
 	router.Use(middleware.CORS(cfg))
@@ -25,8 +28,8 @@ func SetupRoutes(cfg *config.Config, svc *services.ServiceContainer) *gin.Engine
 	router.Static("/img", "../frontend/img")
 
 	// Inicializar handlers
-	authHandler := handlers.NewAuthHandler(svc.Auth)
-	granjaHandler := handlers.NewGranjaHandler(svc.Granja)
+	authHandler := handlers.NewAuthHandler(svc.Auth, repos)
+	granjaHandler := handlers.NewGranjaHandler(svc.Granja, authzSvc, repos)
 	corralHandler := handlers.NewCorralHandler(svc.Corral)
 	loteHandler := handlers.NewLoteHandler(svc.Lote)
 	cerdaHandler := handlers.NewCerdaHandler(svc.Cerda)
@@ -65,9 +68,9 @@ func SetupRoutes(cfg *config.Config, svc *services.ServiceContainer) *gin.Engine
 		protected := api.Group("")
 		protected.Use(middleware.Auth(cfg))
 		{
+			protected.GET("/auth/me", authHandler.Me)
+
 			// --- Granjas ---
-			// Gin requiere que el wildcard tenga el mismo nombre en un nivel,
-			// por eso usamos :id para todo bajo /granjas/:id/...
 			granjas := protected.Group("/granjas")
 			{
 				granjas.POST("", granjaHandler.Crear)
@@ -77,10 +80,7 @@ func SetupRoutes(cfg *config.Config, svc *services.ServiceContainer) *gin.Engine
 				granjas.PUT("/:id", granjaHandler.Actualizar)
 				granjas.DELETE("/:id", granjaHandler.Eliminar)
 				granjas.GET("/:id/estadisticas", granjaHandler.GetEstadisticas)
-				granjas.POST("/:id/usuarios", granjaHandler.AsignarUsuario)
-				granjas.DELETE("/:id/usuarios/:usuario_id", granjaHandler.RemoverUsuario)
 
-				// Recursos anidados: el :id aquí es el granja_id
 				granjas.POST("/:id/corrales", corralHandler.CrearEnGranja)
 				granjas.GET("/:id/corrales", corralHandler.ListarPorGranja)
 				granjas.POST("/:id/cerdas", cerdaHandler.CrearEnGranja)

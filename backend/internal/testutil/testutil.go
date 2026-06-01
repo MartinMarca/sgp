@@ -65,8 +65,9 @@ func SetupTestDB(t *testing.T) *TestEnv {
 
 	repos := repositories.NewRepositoryContainer(db)
 	svc := services.NewServiceContainer(db, repos, services.ServiceConfig{
-		JWTSecret:     "test-secret-key",
-		JWTExpiration: 1 * time.Hour,
+		JWTSecret:       "test-secret-key",
+		JWTExpiration:   1 * time.Hour,
+		RegisterEnabled: true,
 	})
 
 	// Registrar cleanup
@@ -91,14 +92,32 @@ func SetupTestDB(t *testing.T) *TestEnv {
 	return &TestEnv{DB: db, Repos: repos, Services: svc}
 }
 
-// SeedGranja crea una granja de test y retorna su ID
-func SeedGranja(t *testing.T, svc *services.ServiceContainer) uint {
+// SeedPropietario crea un usuario propietario de test
+func SeedPropietario(t *testing.T, env *TestEnv) uint {
 	t.Helper()
-	granja, err := svc.Granja.Crear(services.CrearGranjaInput{
+	nombre := fmt.Sprintf("prop_%d", time.Now().UnixNano())
+	user := &models.Usuario{
+		Username:     nombre,
+		Email:        fmt.Sprintf("%s@test.com", nombre),
+		PasswordHash: "hash",
+		Rol:          models.RolPropietario,
+		Activo:       true,
+	}
+	if err := env.Repos.Usuario.Create(user); err != nil {
+		t.Fatalf("Error creando propietario seed: %v", err)
+	}
+	return user.ID
+}
+
+// SeedGranja crea una granja de test y retorna su ID
+func SeedGranja(t *testing.T, env *TestEnv) uint {
+	t.Helper()
+	propietarioID := SeedPropietario(t, env)
+	granja, err := env.Services.Granja.Crear(services.CrearGranjaInput{
 		Nombre:      "Granja Test",
 		Descripcion: "Granja para tests",
 		Ubicacion:   "Test City",
-	})
+	}, propietarioID)
 	if err != nil {
 		t.Fatalf("Error creando granja seed: %v", err)
 	}

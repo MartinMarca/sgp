@@ -43,12 +43,25 @@ func (r *GranjaRepository) FindByID(id uint, preload ...string) (*models.Granja,
 func (r *GranjaRepository) FindAll(activo *bool) ([]models.Granja, error) {
 	var granjas []models.Granja
 	query := r.db
-	
+
 	if activo != nil {
 		query = query.Where("activo = ?", *activo)
 	}
-	
-	err := query.Find(&granjas).Error
+
+	err := query.Order("nombre").Find(&granjas).Error
+	return granjas, err
+}
+
+// FindByPropietarioID obtiene granjas de un propietario
+func (r *GranjaRepository) FindByPropietarioID(propietarioID uint, activo *bool) ([]models.Granja, error) {
+	var granjas []models.Granja
+	query := r.db.Where("propietario_id = ?", propietarioID)
+
+	if activo != nil {
+		query = query.Where("activo = ?", *activo)
+	}
+
+	err := query.Order("nombre").Find(&granjas).Error
 	return granjas, err
 }
 

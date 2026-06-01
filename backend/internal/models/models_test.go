@@ -146,8 +146,8 @@ func TestConstantesEstadoLote(t *testing.T) {
 
 func TestAllModelsRetornaModelos(t *testing.T) {
 	all := AllModels()
-	if len(all) != 11 {
-		t.Errorf("esperaba 11 modelos, obtuvo %d", len(all))
+	if len(all) != 12 {
+		t.Errorf("esperaba 12 modelos, obtuvo %d", len(all))
 	}
 }
 

@@ -26,14 +26,15 @@ type ServiceContainer struct {
 
 // ServiceConfig configuración para inicializar los services
 type ServiceConfig struct {
-	JWTSecret     string
-	JWTExpiration time.Duration
+	JWTSecret         string
+	JWTExpiration     time.Duration
+	RegisterEnabled   bool
 }
 
 // NewServiceContainer crea una nueva instancia con todos los services
 func NewServiceContainer(db *gorm.DB, repos *repositories.RepositoryContainer, cfg ServiceConfig) *ServiceContainer {
 	return &ServiceContainer{
-		Auth:         NewAuthService(repos, cfg.JWTSecret, cfg.JWTExpiration),
+		Auth:         NewAuthService(repos, cfg.JWTSecret, cfg.JWTExpiration, cfg.RegisterEnabled),
 		Granja:       NewGranjaService(repos),
 		Corral:       NewCorralService(repos),
 		Lote:         NewLoteService(repos),

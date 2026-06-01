@@ -6,7 +6,10 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/martin/sgp/internal/authz"
+	"github.com/martin/sgp/internal/repositories"
 	"github.com/martin/sgp/internal/services"
+	"github.com/martin/sgp/internal/utils"
 )
 
 // getIDParam extrae un parámetro uint de la URL
@@ -26,6 +29,47 @@ func getUserID(c *gin.Context) uint {
 		return id
 	}
 	return 0
+}
+
+// getActor carga el usuario autenticado desde la base de datos.
+func getActor(c *gin.Context, repos *repositories.RepositoryContainer) (authz.Actor, error) {
+	userID := getUserID(c)
+	if userID == 0 {
+		return authz.Actor{}, services.ErrForbidden
+	}
+	user, err := repos.Usuario.FindByID(userID)
+	if err != nil {
+		return authz.Actor{}, err
+	}
+	return authz.ActorFromUsuario(user), nil
+}
+
+// requireGranja verifica permiso y acceso a granja; responde HTTP si falla.
+func requireGranja(c *gin.Context, authzSvc *authz.Service, repos *repositories.RepositoryContainer, granjaID uint, perm string) bool {
+	actor, err := getActor(c, repos)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	if err := authzSvc.RequireGranja(actor, granjaID, perm); err != nil {
+		utils.ErrorResponse(c, mapErrorToStatus(err), err.Error())
+		return false
+	}
+	return true
+}
+
+// requirePerm verifica un permiso global del rol.
+func requirePerm(c *gin.Context, authzSvc *authz.Service, repos *repositories.RepositoryContainer, perm string) bool {
+	actor, err := getActor(c, repos)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Usuario no autenticado")
+		return false
+	}
+	if err := authzSvc.Require(actor, perm); err != nil {
+		utils.ErrorResponse(c, mapErrorToStatus(err), err.Error())
+		return false
+	}
+	return true
 }
 
 // getOptionalIntQuery extrae un query param int opcional
@@ -93,12 +137,14 @@ func getOptionalUintQuery(c *gin.Context, param string) *uint {
 // mapErrorToStatus convierte errores de servicio a status HTTP
 func mapErrorToStatus(err error) int {
 	switch {
-	case errors.Is(err, services.ErrNotFound):
+	case errors.Is(err, services.ErrNotFound),
+		errors.Is(err, authz.ErrNotFound):
 		return http.StatusNotFound
 	case errors.Is(err, services.ErrDuplicateKey),
 		errors.Is(err, services.ErrCaravanaDuplicada):
 		return http.StatusConflict
-	case errors.Is(err, services.ErrForbidden):
+	case errors.Is(err, services.ErrForbidden),
+		errors.Is(err, authz.ErrForbidden):
 		return http.StatusForbidden
 	case errors.Is(err, services.ErrCerdaNoDisponible),
 		errors.Is(err, services.ErrCerdaNoEnServicio),

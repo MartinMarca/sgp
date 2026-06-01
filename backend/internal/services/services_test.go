@@ -16,7 +16,7 @@ func TestCicloMaternidadCompleto(t *testing.T) {
 	env := testutil.SetupTestDB(t)
 	svc := env.Services
 
-	granjaID := testutil.SeedGranja(t, svc)
+	granjaID := testutil.SeedGranja(t, env)
 	corralID := testutil.SeedCorral(t, svc, granjaID)
 	padrilloID := testutil.SeedPadrillo(t, svc, granjaID)
 	cerdaID := testutil.SeedCerda(t, svc, granjaID)
@@ -125,7 +125,7 @@ func TestCicloMaternidadCompleto(t *testing.T) {
 func TestCrearCerda_CaravanaDuplicada(t *testing.T) {
 	env := testutil.SetupTestDB(t)
 	svc := env.Services
-	granjaID := testutil.SeedGranja(t, svc)
+	granjaID := testutil.SeedGranja(t, env)
 
 	_, err := svc.Cerda.Crear(services.CrearCerdaInput{
 		GranjaID: granjaID, NumeroCaravana: "C-DUP", Estado: "disponible",
@@ -148,7 +148,7 @@ func TestCrearCerda_CaravanaDuplicada(t *testing.T) {
 func TestCrearCerda_CualquierEstadoInicial(t *testing.T) {
 	env := testutil.SetupTestDB(t)
 	svc := env.Services
-	granjaID := testutil.SeedGranja(t, svc)
+	granjaID := testutil.SeedGranja(t, env)
 
 	estados := []string{"disponible", "servicio", "gestacion", "cria"}
 	for i, estado := range estados {
@@ -169,7 +169,7 @@ func TestCrearCerda_CualquierEstadoInicial(t *testing.T) {
 func TestBajaCerda_EnServicioFalla(t *testing.T) {
 	env := testutil.SetupTestDB(t)
 	svc := env.Services
-	granjaID := testutil.SeedGranja(t, svc)
+	granjaID := testutil.SeedGranja(t, env)
 	padrilloID := testutil.SeedPadrillo(t, svc, granjaID)
 	cerdaID := testutil.SeedCerda(t, svc, granjaID)
 
@@ -196,7 +196,7 @@ func TestBajaCerda_EnServicioFalla(t *testing.T) {
 func TestCrearServicio_CerdaNoDisponible(t *testing.T) {
 	env := testutil.SetupTestDB(t)
 	svc := env.Services
-	granjaID := testutil.SeedGranja(t, svc)
+	granjaID := testutil.SeedGranja(t, env)
 
 	// Crear cerda en estado gestación
 	cerda, _ := svc.Cerda.Crear(services.CrearCerdaInput{
@@ -215,7 +215,7 @@ func TestCrearServicio_CerdaNoDisponible(t *testing.T) {
 func TestCrearServicio_MontaNaturalSinPadrillo(t *testing.T) {
 	env := testutil.SetupTestDB(t)
 	svc := env.Services
-	granjaID := testutil.SeedGranja(t, svc)
+	granjaID := testutil.SeedGranja(t, env)
 	cerdaID := testutil.SeedCerda(t, svc, granjaID)
 
 	_, err := svc.Servicio.Crear(services.CrearServicioInput{
@@ -230,7 +230,7 @@ func TestCrearServicio_MontaNaturalSinPadrillo(t *testing.T) {
 func TestConfirmarPrenez_DobleConfirmacion(t *testing.T) {
 	env := testutil.SetupTestDB(t)
 	svc := env.Services
-	granjaID := testutil.SeedGranja(t, svc)
+	granjaID := testutil.SeedGranja(t, env)
 	padrilloID := testutil.SeedPadrillo(t, svc, granjaID)
 	cerdaID := testutil.SeedCerda(t, svc, granjaID)
 
@@ -255,7 +255,7 @@ func TestConfirmarPrenez_DobleConfirmacion(t *testing.T) {
 func TestCancelarPrenez_DevuelveDisponible(t *testing.T) {
 	env := testutil.SetupTestDB(t)
 	svc := env.Services
-	granjaID := testutil.SeedGranja(t, svc)
+	granjaID := testutil.SeedGranja(t, env)
 	padrilloID := testutil.SeedPadrillo(t, svc, granjaID)
 	cerdaID := testutil.SeedCerda(t, svc, granjaID)
 
@@ -287,7 +287,7 @@ func TestCancelarPrenez_DevuelveDisponible(t *testing.T) {
 func TestCrearParto_CerdaNoEnGestacion(t *testing.T) {
 	env := testutil.SetupTestDB(t)
 	svc := env.Services
-	granjaID := testutil.SeedGranja(t, svc)
+	granjaID := testutil.SeedGranja(t, env)
 	cerdaID := testutil.SeedCerda(t, svc, granjaID) // Estado disponible
 
 	_, err := svc.Parto.Crear(services.CrearPartoInput{
@@ -303,7 +303,7 @@ func TestCrearParto_CerdaNoEnGestacion(t *testing.T) {
 func TestCrearParto_HembrasMachosDistintoVivos(t *testing.T) {
 	env := testutil.SetupTestDB(t)
 	svc := env.Services
-	granjaID := testutil.SeedGranja(t, svc)
+	granjaID := testutil.SeedGranja(t, env)
 	padrilloID := testutil.SeedPadrillo(t, svc, granjaID)
 	cerdaID := testutil.SeedCerda(t, svc, granjaID)
 
@@ -335,7 +335,7 @@ func TestCrearParto_HembrasMachosDistintoVivos(t *testing.T) {
 func TestCrearDestete_DestetadosExcedenVivos(t *testing.T) {
 	env := testutil.SetupTestDB(t)
 	svc := env.Services
-	granjaID := testutil.SeedGranja(t, svc)
+	granjaID := testutil.SeedGranja(t, env)
 	corralID := testutil.SeedCorral(t, svc, granjaID)
 	padrilloID := testutil.SeedPadrillo(t, svc, granjaID)
 	cerdaID := testutil.SeedCerda(t, svc, granjaID)
@@ -368,7 +368,7 @@ func TestCrearDestete_DestetadosExcedenVivos(t *testing.T) {
 func TestCrearDestete_SinLoteFalla(t *testing.T) {
 	env := testutil.SetupTestDB(t)
 	svc := env.Services
-	granjaID := testutil.SeedGranja(t, svc)
+	granjaID := testutil.SeedGranja(t, env)
 	padrilloID := testutil.SeedPadrillo(t, svc, granjaID)
 	cerdaID := testutil.SeedCerda(t, svc, granjaID)
 
@@ -401,7 +401,7 @@ func TestCrearDestete_SinLoteFalla(t *testing.T) {
 func TestCrearDestete_ConLoteExistente(t *testing.T) {
 	env := testutil.SetupTestDB(t)
 	svc := env.Services
-	granjaID := testutil.SeedGranja(t, svc)
+	granjaID := testutil.SeedGranja(t, env)
 	corralID := testutil.SeedCorral(t, svc, granjaID)
 	padrilloID := testutil.SeedPadrillo(t, svc, granjaID)
 
@@ -454,7 +454,7 @@ func TestCrearDestete_ConLoteExistente(t *testing.T) {
 func TestCerrarLote(t *testing.T) {
 	env := testutil.SetupTestDB(t)
 	svc := env.Services
-	granjaID := testutil.SeedGranja(t, svc)
+	granjaID := testutil.SeedGranja(t, env)
 	corralID := testutil.SeedCorral(t, svc, granjaID)
 
 	lote, _ := svc.Lote.Crear(services.CrearLoteInput{
@@ -484,7 +484,7 @@ func TestCerrarLote(t *testing.T) {
 func TestEliminarCorral_ConLotesActivosFalla(t *testing.T) {
 	env := testutil.SetupTestDB(t)
 	svc := env.Services
-	granjaID := testutil.SeedGranja(t, svc)
+	granjaID := testutil.SeedGranja(t, env)
 	corralID := testutil.SeedCorral(t, svc, granjaID)
 
 	// Crear lote activo en el corral

@@ -10,12 +10,16 @@ CREATE TABLE usuarios (
     email VARCHAR(100) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     nombre_completo VARCHAR(100),
-    rol ENUM('admin', 'usuario', 'veterinario') DEFAULT 'usuario',
+    establecimiento VARCHAR(150),
+    rol ENUM('admin', 'propietario', 'empleado') DEFAULT 'propietario',
+    propietario_id INT NULL,
     activo BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_username (username),
-    INDEX idx_email (email)
+    INDEX idx_email (email),
+    INDEX idx_propietario_usuario (propietario_id),
+    FOREIGN KEY (propietario_id) REFERENCES usuarios(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Tabla de Granjas
@@ -25,10 +29,13 @@ CREATE TABLE granjas (
     descripcion TEXT,
     ubicacion VARCHAR(200),
     activo BOOLEAN DEFAULT TRUE,
+    propietario_id INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_nombre (nombre),
-    INDEX idx_activo (activo)
+    INDEX idx_activo (activo),
+    INDEX idx_propietario (propietario_id),
+    FOREIGN KEY (propietario_id) REFERENCES usuarios(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Tabla intermedia: Usuarios-Granjas (relación N:M)

@@ -20,12 +20,13 @@ func setupRouter(t *testing.T) (*testutil.TestEnv, http.Handler) {
 	env := testutil.SetupTestDB(t)
 
 	cfg := &config.Config{
-		JWTSecret:     "test-secret-key",
-		JWTExpiration: "1h",
-		CORSOrigin:    "*",
+		JWTSecret:         "test-secret-key",
+		JWTExpiration:     "1h",
+		CORSOrigin:        "*",
+		RegisterEnabled:   true,
 	}
 
-	router := routes.SetupRoutes(cfg, env.Services)
+	router := routes.SetupRoutes(cfg, env.Services, env.Repos)
 	return env, router
 }
 

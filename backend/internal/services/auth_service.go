@@ -3,6 +3,7 @@ package services
 import (
 	"time"
 
+	"github.com/martin/sgp/internal/authz"
 	"github.com/martin/sgp/internal/models"
 	"github.com/martin/sgp/internal/repositories"
 	"github.com/martin/sgp/internal/utils"
@@ -11,17 +12,19 @@ import (
 
 // AuthService maneja la lógica de autenticación
 type AuthService struct {
-	repos         *repositories.RepositoryContainer
-	jwtSecret     string
-	jwtExpiration time.Duration
+	repos             *repositories.RepositoryContainer
+	jwtSecret         string
+	jwtExpiration     time.Duration
+	registerEnabled   bool
 }
 
 // NewAuthService crea una nueva instancia del servicio
-func NewAuthService(repos *repositories.RepositoryContainer, jwtSecret string, jwtExpiration time.Duration) *AuthService {
+func NewAuthService(repos *repositories.RepositoryContainer, jwtSecret string, jwtExpiration time.Duration, registerEnabled bool) *AuthService {
 	return &AuthService{
-		repos:         repos,
-		jwtSecret:     jwtSecret,
-		jwtExpiration: jwtExpiration,
+		repos:           repos,
+		jwtSecret:       jwtSecret,
+		jwtExpiration:   jwtExpiration,
+		registerEnabled: registerEnabled,
 	}
 }
 
@@ -48,11 +51,27 @@ type LoginResponse struct {
 	Usuario *models.Usuario `json:"usuario"`
 }
 
+// MeResponse perfil del usuario autenticado
+type MeResponse struct {
+	Usuario         *models.Usuario `json:"usuario"`
+	Granjas         []models.Granja `json:"granjas"`
+	Permisos        []string        `json:"permisos"`
+	RegisterEnabled bool            `json:"register_enabled"`
+}
+
 // --- Métodos ---
 
-// Registrar crea un nuevo usuario
+// RegisterEnabled indica si el registro público está habilitado.
+func (s *AuthService) RegisterEnabled() bool {
+	return s.registerEnabled
+}
+
+// Registrar crea un nuevo usuario (solo propietario por defecto en registro público).
 func (s *AuthService) Registrar(input RegistroInput) (*models.Usuario, error) {
-	// Verificar username duplicado
+	if !s.registerEnabled {
+		return nil, ErrForbidden
+	}
+
 	existe, err := s.repos.Usuario.ExisteUsername(input.Username, nil)
 	if err != nil {
 		return nil, err
@@ -61,7 +80,6 @@ func (s *AuthService) Registrar(input RegistroInput) (*models.Usuario, error) {
 		return nil, ErrDuplicateKey
 	}
 
-	// Verificar email duplicado
 	existe, err = s.repos.Usuario.ExisteEmail(input.Email, nil)
 	if err != nil {
 		return nil, err
@@ -70,7 +88,6 @@ func (s *AuthService) Registrar(input RegistroInput) (*models.Usuario, error) {
 		return nil, ErrDuplicateKey
 	}
 
-	// Hash de password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, err
@@ -80,7 +97,7 @@ func (s *AuthService) Registrar(input RegistroInput) (*models.Usuario, error) {
 		Username:     input.Username,
 		Email:        input.Email,
 		PasswordHash: string(hashedPassword),
-		Rol:          models.RolUsuario,
+		Rol:          models.RolPropietario,
 		Activo:       true,
 	}
 
@@ -95,15 +112,12 @@ func (s *AuthService) Registrar(input RegistroInput) (*models.Usuario, error) {
 		return nil, err
 	}
 
-	// Limpiar password del response
 	usuario.PasswordHash = ""
-
 	return usuario, nil
 }
 
 // Login autentica un usuario y retorna un JWT
 func (s *AuthService) Login(input LoginInput) (*LoginResponse, error) {
-	// Buscar usuario por username
 	usuario, err := s.repos.Usuario.FindByUsername(input.Username)
 	if err != nil {
 		return nil, ErrNotFound
@@ -113,22 +127,41 @@ func (s *AuthService) Login(input LoginInput) (*LoginResponse, error) {
 		return nil, ErrForbidden
 	}
 
-	// Verificar password
 	if err := bcrypt.CompareHashAndPassword([]byte(usuario.PasswordHash), []byte(input.Password)); err != nil {
 		return nil, ErrForbidden
 	}
 
-	// Generar JWT
 	token, err := utils.GenerateJWT(usuario.ID, usuario.Email, usuario.Rol, s.jwtSecret, s.jwtExpiration)
 	if err != nil {
 		return nil, err
 	}
 
-	// Limpiar password del response
 	usuario.PasswordHash = ""
 
 	return &LoginResponse{
 		Token:   token,
 		Usuario: usuario,
+	}, nil
+}
+
+// Me devuelve el perfil, granjas accesibles y permisos del usuario autenticado.
+func (s *AuthService) Me(actor authz.Actor) (*MeResponse, error) {
+	usuario, err := s.repos.Usuario.FindByID(actor.ID)
+	if err != nil {
+		return nil, ErrNotFound
+	}
+	usuario.PasswordHash = ""
+
+	authzSvc := authz.NewService(s.repos)
+	granjas, err := authzSvc.GranjasAccesibles(actor, func(b bool) *bool { return &b }(true))
+	if err != nil {
+		return nil, err
+	}
+
+	return &MeResponse{
+		Usuario:         usuario,
+		Granjas:         granjas,
+		Permisos:        authz.PermisosEfectivos(actor.Rol),
+		RegisterEnabled: s.registerEnabled,
 	}, nil
 }

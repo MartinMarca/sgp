@@ -1,6 +1,10 @@
 package config
 
-import "os"
+import (
+	"os"
+	"strconv"
+	"strings"
+)
 
 // Config contiene la configuración de la aplicación
 type Config struct {
@@ -25,10 +29,22 @@ type Config struct {
 	// Environment
 	Env      string
 	LogLevel string
+
+	// Auth
+	RegisterEnabled     bool
+	BootstrapAdminEmail string
 }
 
 // Load carga la configuración desde las variables de entorno
 func Load() *Config {
+	env := getEnv("ENV", "development")
+	registerEnabled := true
+	if v := os.Getenv("REGISTER_ENABLED"); v != "" {
+		registerEnabled, _ = strconv.ParseBool(v)
+	} else if env == "production" {
+		registerEnabled = false
+	}
+
 	return &Config{
 		// Database
 		DBHost:     getEnv("DB_HOST", "localhost"),
@@ -49,8 +65,11 @@ func Load() *Config {
 		CORSOrigin: getEnv("CORS_ORIGIN", "http://localhost:8080"),
 
 		// Environment
-		Env:      getEnv("ENV", "development"),
+		Env:      env,
 		LogLevel: getEnv("LOG_LEVEL", "debug"),
+
+		RegisterEnabled:     registerEnabled,
+		BootstrapAdminEmail: strings.TrimSpace(getEnv("BOOTSTRAP_ADMIN_EMAIL", "")),
 	}
 }
 

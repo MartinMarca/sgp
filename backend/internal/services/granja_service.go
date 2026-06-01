@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/martin/sgp/internal/authz"
 	"github.com/martin/sgp/internal/models"
 	"github.com/martin/sgp/internal/repositories"
 )
@@ -19,9 +20,10 @@ func NewGranjaService(repos *repositories.RepositoryContainer) *GranjaService {
 
 // CrearGranjaInput datos para crear una granja
 type CrearGranjaInput struct {
-	Nombre      string `json:"nombre" binding:"required"`
-	Descripcion string `json:"descripcion"`
-	Ubicacion   string `json:"ubicacion"`
+	Nombre        string `json:"nombre" binding:"required"`
+	Descripcion   string `json:"descripcion"`
+	Ubicacion     string `json:"ubicacion"`
+	PropietarioID *uint  `json:"propietario_id"` // solo admin
 }
 
 // ActualizarGranjaInput datos para actualizar una granja
@@ -40,10 +42,11 @@ type AsignarUsuarioInput struct {
 // --- Métodos del servicio ---
 
 // Crear registra una nueva granja
-func (s *GranjaService) Crear(input CrearGranjaInput) (*models.Granja, error) {
+func (s *GranjaService) Crear(input CrearGranjaInput, propietarioID uint) (*models.Granja, error) {
 	granja := &models.Granja{
-		Nombre: input.Nombre,
-		Activo: true,
+		Nombre:        input.Nombre,
+		PropietarioID: propietarioID,
+		Activo:        true,
 	}
 
 	if input.Descripcion != "" {
@@ -74,9 +77,16 @@ func (s *GranjaService) ListarTodas(activo *bool) ([]models.Granja, error) {
 	return s.repos.Granja.FindAll(activo)
 }
 
-// ListarPorUsuario lista granjas a las que el usuario tiene acceso
-func (s *GranjaService) ListarPorUsuario(usuarioID uint) ([]models.Granja, error) {
-	return s.repos.Granja.FindByUsuarioID(usuarioID)
+// ListarAccesibles lista granjas visibles para el actor
+func (s *GranjaService) ListarAccesibles(actor authz.Actor, activo *bool) ([]models.Granja, error) {
+	authzSvc := authz.NewService(s.repos)
+	return authzSvc.GranjasAccesibles(actor, activo)
+}
+
+// ListarPorUsuario lista granjas accesibles (alias de compatibilidad)
+func (s *GranjaService) ListarPorUsuario(actor authz.Actor) ([]models.Granja, error) {
+	activo := true
+	return s.ListarAccesibles(actor, &activo)
 }
 
 // Actualizar modifica una granja

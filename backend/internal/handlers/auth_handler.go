@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/martin/sgp/internal/repositories"
 	"github.com/martin/sgp/internal/services"
 	"github.com/martin/sgp/internal/utils"
 )
@@ -11,11 +12,12 @@ import (
 // AuthHandler maneja los endpoints de autenticación
 type AuthHandler struct {
 	service *services.AuthService
+	repos   *repositories.RepositoryContainer
 }
 
 // NewAuthHandler crea una nueva instancia del handler
-func NewAuthHandler(service *services.AuthService) *AuthHandler {
-	return &AuthHandler{service: service}
+func NewAuthHandler(service *services.AuthService, repos *repositories.RepositoryContainer) *AuthHandler {
+	return &AuthHandler{service: service, repos: repos}
 }
 
 // Registrar godoc
@@ -54,4 +56,22 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, "Login exitoso", response)
+}
+
+// Me godoc
+// GET /api/auth/me
+func (h *AuthHandler) Me(c *gin.Context) {
+	actor, err := getActor(c, h.repos)
+	if err != nil {
+		utils.ErrorResponse(c, mapErrorToStatus(err), err.Error())
+		return
+	}
+
+	me, err := h.service.Me(actor)
+	if err != nil {
+		utils.ErrorResponse(c, mapErrorToStatus(err), err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, "", me)
 }

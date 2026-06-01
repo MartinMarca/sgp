@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/martin/sgp/internal/bootstrap"
 	"github.com/martin/sgp/internal/config"
 	"github.com/martin/sgp/internal/database"
 	"github.com/martin/sgp/internal/repositories"
@@ -43,13 +44,15 @@ func main() {
 
 	// Inicializar capas
 	repos := repositories.NewRepositoryContainer(db)
+	bootstrap.Admin(cfg, repos)
 	svc := services.NewServiceContainer(db, repos, services.ServiceConfig{
-		JWTSecret:     cfg.JWTSecret,
-		JWTExpiration: jwtExpiration,
+		JWTSecret:       cfg.JWTSecret,
+		JWTExpiration:   jwtExpiration,
+		RegisterEnabled: cfg.RegisterEnabled,
 	})
 
 	// Configurar rutas
-	router := routes.SetupRoutes(cfg, svc)
+	router := routes.SetupRoutes(cfg, svc, repos)
 
 	// Iniciar servidor
 	addr := cfg.ServerHost + ":" + cfg.ServerPort
