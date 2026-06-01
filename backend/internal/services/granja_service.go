@@ -33,12 +33,6 @@ type ActualizarGranjaInput struct {
 	Ubicacion   string `json:"ubicacion"`
 }
 
-// AsignarUsuarioInput datos para asignar un usuario a una granja
-type AsignarUsuarioInput struct {
-	UsuarioID uint   `json:"usuario_id" binding:"required"`
-	Rol       string `json:"rol" binding:"required,oneof=propietario administrador operador"`
-}
-
 // --- Métodos del servicio ---
 
 // Crear registra una nueva granja
@@ -150,28 +144,6 @@ func (s *GranjaService) Eliminar(id uint) error {
 
 	granja.Activo = false
 	return s.repos.Granja.Update(granja)
-}
-
-// AsignarUsuario asigna un usuario a una granja con un rol
-func (s *GranjaService) AsignarUsuario(granjaID uint, input AsignarUsuarioInput) error {
-	// Verificar que la granja existe
-	_, err := s.repos.Granja.FindByID(granjaID)
-	if err != nil {
-		return ErrNotFound
-	}
-
-	// Verificar que el usuario existe
-	_, err = s.repos.Usuario.FindByID(input.UsuarioID)
-	if err != nil {
-		return ErrNotFound
-	}
-
-	return s.repos.Granja.AsignarUsuario(granjaID, input.UsuarioID, input.Rol)
-}
-
-// RemoverUsuario remueve un usuario de una granja
-func (s *GranjaService) RemoverUsuario(granjaID, usuarioID uint) error {
-	return s.repos.Granja.RemoverUsuario(granjaID, usuarioID)
 }
 
 // GetEstadisticas obtiene estadísticas generales de la granja

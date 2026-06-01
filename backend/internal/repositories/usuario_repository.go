@@ -130,27 +130,3 @@ func (r *UsuarioRepository) ExisteEmail(email string, excludeID *uint) (bool, er
 	err := query.Count(&count).Error
 	return count > 0, err
 }
-
-// GetGranjas obtiene todas las granjas de un usuario
-func (r *UsuarioRepository) GetGranjas(usuarioID uint) ([]models.Granja, error) {
-	var granjas []models.Granja
-	err := r.db.
-		Joins("JOIN usuario_granja ON usuario_granja.granja_id = granjas.id").
-		Where("usuario_granja.usuario_id = ?", usuarioID).
-		Find(&granjas).Error
-	return granjas, err
-}
-
-// GetRolEnGranja obtiene el rol de un usuario en una granja
-func (r *UsuarioRepository) GetRolEnGranja(usuarioID, granjaID uint) (string, error) {
-	var usuarioGranja models.UsuarioGranja
-	err := r.db.
-		Where("usuario_id = ? AND granja_id = ?", usuarioID, granjaID).
-		First(&usuarioGranja).Error
-	
-	if err != nil {
-		return "", err
-	}
-	
-	return usuarioGranja.Rol, nil
-}

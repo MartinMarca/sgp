@@ -22,17 +22,22 @@ ALTER TABLE granjas
 -- Poblar desde usuario_granja si existe
 UPDATE granjas g
 SET propietario_id = (
-    SELECT ug.usuario_id
-    FROM usuario_granja ug
-    WHERE ug.granja_id = g.id AND ug.rol = 'propietario'
-    LIMIT 1
+    SELECT ug.usuario_id FROM usuario_granja ug
+    WHERE ug.granja_id = g.id AND ug.rol = 'propietario' LIMIT 1
 )
-WHERE g.propietario_id IS NULL;
+WHERE (g.propietario_id IS NULL OR g.propietario_id = 0);
 
 -- Fallback: primer usuario propietario o admin
 UPDATE granjas g
 SET propietario_id = (SELECT MIN(id) FROM usuarios WHERE rol IN ('propietario', 'admin'))
-WHERE g.propietario_id IS NULL;
+WHERE (g.propietario_id IS NULL OR g.propietario_id = 0)
+  AND EXISTS (SELECT 1 FROM usuarios WHERE rol IN ('propietario', 'admin'));
+
+-- Último fallback: cualquier usuario
+UPDATE granjas g
+SET propietario_id = (SELECT MIN(id) FROM usuarios)
+WHERE (g.propietario_id IS NULL OR g.propietario_id = 0)
+  AND EXISTS (SELECT 1 FROM usuarios);
 
 ALTER TABLE granjas
     MODIFY COLUMN propietario_id INT NOT NULL,

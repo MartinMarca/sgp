@@ -75,33 +75,6 @@ func (r *GranjaRepository) Delete(id uint) error {
 	return r.db.Delete(&models.Granja{}, id).Error
 }
 
-// FindByUsuarioID obtiene todas las granjas de un usuario
-func (r *GranjaRepository) FindByUsuarioID(usuarioID uint) ([]models.Granja, error) {
-	var granjas []models.Granja
-	err := r.db.
-		Joins("JOIN usuario_granja ON usuario_granja.granja_id = granjas.id").
-		Where("usuario_granja.usuario_id = ?", usuarioID).
-		Find(&granjas).Error
-	return granjas, err
-}
-
-// AsignarUsuario asigna un usuario a una granja con un rol
-func (r *GranjaRepository) AsignarUsuario(granjaID, usuarioID uint, rol string) error {
-	usuarioGranja := models.UsuarioGranja{
-		GranjaID:  granjaID,
-		UsuarioID: usuarioID,
-		Rol:       rol,
-	}
-	return r.db.Create(&usuarioGranja).Error
-}
-
-// RemoverUsuario remueve un usuario de una granja
-func (r *GranjaRepository) RemoverUsuario(granjaID, usuarioID uint) error {
-	return r.db.
-		Where("granja_id = ? AND usuario_id = ?", granjaID, usuarioID).
-		Delete(&models.UsuarioGranja{}).Error
-}
-
 // GetEstadisticas obtiene estadísticas básicas de una granja
 func (r *GranjaRepository) GetEstadisticas(granjaID uint) (map[string]interface{}, error) {
 	stats := make(map[string]interface{})

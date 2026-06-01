@@ -461,3 +461,55 @@ func TestE2E_AuthzRestricciones(t *testing.T) {
 		t.Fatalf("Granja ajena: esperaba 403, obtuvo %d", w.Code)
 	}
 }
+
+func TestE2E_EmpleadoOperacionesPermitidas(t *testing.T) {
+	_, router := setupRouter(t)
+	tokenProp := getAuthToken(t, router)
+
+	w := doRequest(t, router, "POST", "/api/granjas", tokenProp, map[string]string{"nombre": "Granja Emp Ops"})
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Crear granja: %d %s", w.Code, w.Body.String())
+	}
+	w = doRequest(t, router, "POST", "/api/granjas/1/corrales", tokenProp, map[string]string{"nombre": "Corral 1"})
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Crear corral: %d %s", w.Code, w.Body.String())
+	}
+	w = doRequest(t, router, "POST", "/api/corrales/1/lotes", tokenProp, map[string]interface{}{
+		"nombre": "Lote 1", "cantidad_lechones": 5,
+	})
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Crear lote: %d %s", w.Code, w.Body.String())
+	}
+
+	w = doRequest(t, router, "POST", "/api/usuarios", tokenProp, map[string]interface{}{
+		"username": "empops", "email": "empops@test.com", "password": "123456", "rol": "empleado",
+	})
+	if w.Code != http.StatusCreated {
+		t.Fatalf("Crear empleado: %d %s", w.Code, w.Body.String())
+	}
+	w = doRequest(t, router, "POST", "/api/auth/login", "", map[string]string{
+		"username": "empops", "password": "123456",
+	})
+	resp := parseResponse(t, w)
+	tokenEmp := resp.Data.(map[string]interface{})["token"].(string)
+
+	// Empleado puede cerrar lote
+	w = doRequest(t, router, "POST", "/api/lotes/1/cerrar", tokenEmp, map[string]string{
+		"motivo_cierre": "venta", "estado": "vendido",
+	})
+	if w.Code != http.StatusOK {
+		t.Fatalf("Empleado cerrar lote: esperaba 200, obtuvo %d: %s", w.Code, w.Body.String())
+	}
+
+	// Empleado puede eliminar corral vacío
+	w = doRequest(t, router, "DELETE", "/api/corrales/1", tokenEmp, nil)
+	if w.Code != http.StatusOK {
+		t.Fatalf("Empleado eliminar corral: esperaba 200, obtuvo %d: %s", w.Code, w.Body.String())
+	}
+
+	// Empleado no puede crear granja
+	w = doRequest(t, router, "POST", "/api/granjas", tokenEmp, map[string]string{"nombre": "Granja Emp"})
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("Empleado crear granja: esperaba 403, obtuvo %d", w.Code)
+	}
+}

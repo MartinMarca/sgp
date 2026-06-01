@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/martin/sgp/internal/authz"
 	"github.com/martin/sgp/internal/models"
 	"github.com/martin/sgp/internal/repositories"
 	"github.com/martin/sgp/internal/services"
@@ -93,6 +94,23 @@ func SetupTestDB(t *testing.T) *TestEnv {
 	return &TestEnv{DB: db, Repos: repos, Services: svc}
 }
 
+// SeedAdmin crea un usuario admin de test
+func SeedAdmin(t *testing.T, env *TestEnv) uint {
+	t.Helper()
+	nombre := fmt.Sprintf("admin_%d", time.Now().UnixNano())
+	user := &models.Usuario{
+		Username:     nombre,
+		Email:        fmt.Sprintf("%s@test.com", nombre),
+		PasswordHash: "hash",
+		Rol:          models.RolAdmin,
+		Activo:       true,
+	}
+	if err := env.Repos.Usuario.Create(user); err != nil {
+		t.Fatalf("Error creando admin seed: %v", err)
+	}
+	return user.ID
+}
+
 // SeedPropietario crea un usuario propietario de test
 func SeedPropietario(t *testing.T, env *TestEnv) uint {
 	t.Helper()
@@ -110,10 +128,33 @@ func SeedPropietario(t *testing.T, env *TestEnv) uint {
 	return user.ID
 }
 
-// SeedGranja crea una granja de test y retorna su ID
+// SeedEmpleado crea un empleado vinculado a un propietario
+func SeedEmpleado(t *testing.T, env *TestEnv, propietarioID uint) uint {
+	t.Helper()
+	nombre := fmt.Sprintf("emp_%d", time.Now().UnixNano())
+	user := &models.Usuario{
+		Username:      nombre,
+		Email:         fmt.Sprintf("%s@test.com", nombre),
+		PasswordHash:  "hash",
+		Rol:           models.RolEmpleado,
+		PropietarioID: &propietarioID,
+		Activo:        true,
+	}
+	if err := env.Repos.Usuario.Create(user); err != nil {
+		t.Fatalf("Error creando empleado seed: %v", err)
+	}
+	return user.ID
+}
+
+// SeedGranja crea una granja de test (nuevo propietario) y retorna su ID
 func SeedGranja(t *testing.T, env *TestEnv) uint {
 	t.Helper()
-	propietarioID := SeedPropietario(t, env)
+	return SeedGranjaFor(t, env, SeedPropietario(t, env))
+}
+
+// SeedGranjaFor crea una granja para un propietario existente
+func SeedGranjaFor(t *testing.T, env *TestEnv, propietarioID uint) uint {
+	t.Helper()
 	granja, err := env.Services.Granja.Crear(services.CrearGranjaInput{
 		Nombre:      "Granja Test",
 		Descripcion: "Granja para tests",
@@ -123,6 +164,16 @@ func SeedGranja(t *testing.T, env *TestEnv) uint {
 		t.Fatalf("Error creando granja seed: %v", err)
 	}
 	return granja.ID
+}
+
+// SeedActor carga un Actor desde la BD por ID de usuario
+func SeedActor(t *testing.T, env *TestEnv, userID uint) authz.Actor {
+	t.Helper()
+	user, err := env.Repos.Usuario.FindByID(userID)
+	if err != nil {
+		t.Fatalf("Error cargando usuario seed %d: %v", userID, err)
+	}
+	return authz.ActorFromUsuario(user)
 }
 
 // SeedCorral crea un corral de test

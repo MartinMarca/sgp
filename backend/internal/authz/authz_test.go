@@ -24,6 +24,9 @@ func TestHasPermission_EmpleadoSinVentas(t *testing.T) {
 	if !authz.HasPermission(models.RolEmpleado, authz.PermGranjaRead) {
 		t.Fatal("empleado debería tener granja:read")
 	}
+	if !authz.HasPermission(models.RolEmpleado, authz.PermRecursoWrite) {
+		t.Fatal("empleado debería tener recurso:write")
+	}
 }
 
 func TestHasPermission_PropietarioConVentas(t *testing.T) {

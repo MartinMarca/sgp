@@ -12,6 +12,10 @@ import (
 func AutoMigrate(db *gorm.DB) error {
 	log.Println("Ejecutando migraciones automáticas...")
 
+	if err := migrateRolesLegacy(db); err != nil {
+		return err
+	}
+
 	// Usar models.AllModels() para obtener todos los modelos
 	err := db.AutoMigrate(models.AllModels()...)
 
