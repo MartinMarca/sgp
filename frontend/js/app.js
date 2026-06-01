@@ -503,5 +503,10 @@ const App = (() => {
   };
 })();
 
-// Auto-init
 document.addEventListener('DOMContentLoaded', () => App.init());
+
+window.addEventListener('pageshow', () => {
+  if (!API.isAuthenticated()) {
+    window.location.replace('index.html');
+  }
+});

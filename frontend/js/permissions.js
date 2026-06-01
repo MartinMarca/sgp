@@ -28,6 +28,7 @@ const Permissions = (() => {
   }
 
   function can(perm) {
+    if (isAdmin()) return true;
     return permSet.has(perm);
   }
 
@@ -60,6 +61,7 @@ const Permissions = (() => {
   };
 
   function canAccessPage(page) {
+    if (isAdmin()) return true;
     const perm = PAGE_PERM[page];
     return !perm || can(perm);
   }

@@ -178,7 +178,7 @@ const API = (() => {
 
   function logout() {
     removeToken();
-    window.location.href = 'index.html';
+    window.location.replace('index.html');
   }
 
   return {
